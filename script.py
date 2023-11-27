@@ -13,7 +13,8 @@ bundle = [];
 r = requests.get(wet_url, stream=True)
 records = ArchiveIterator(r.raw) 
 i = 0;
-while (i < 19):
+# TODO I need to map the language identification of the tool with the header that presents the lang.
+while (True):
     try:
         record = next(records)
         if record is None: 
