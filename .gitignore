@@ -1,3 +1,9 @@
-*.swp
+**.swp
 __pycache__
 lib
+**.
+**.tmp
+**.log
+**.swo
+victoria/*
+web2text/*

@@ -1,0 +1,12 @@
+reset
+
+set title "stats cc lang diversity"
+set datafile missing "-"
+set xtics nomirror rotate by -45
+set key noenhanced 
+
+
+set style data linespoints 
+plot 'count_big.dat' using 2:xtic(1) title "testtext"
+
+

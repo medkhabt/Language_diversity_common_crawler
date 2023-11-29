@@ -12,6 +12,6 @@ tail -n +2 "$1" > "$1.tmp"
 ($SCRIPT_DIR/testtextcat $SCRIPT_DIR/fpdb.conf < "$1.tmp") | sed 's/\[\([^-]*\)-*[^-]*-utf8\].*/\1/g' > predic.tmp
 
 
-echo "${STATS} :: $( head -n 1 predic.tmp) " >> $SCRIPT_DIR/result.log
+echo "${STATS}::$( head -n 1 predic.tmp) " >> "$SCRIPT_DIR/$2.log"
 # rm "$1.tmp"
 # Add that line in the result log for stats. 
