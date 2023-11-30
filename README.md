@@ -10,11 +10,13 @@ I compiled the code and got the necessary files to predict the language of the t
 - I used web2text lib, that uses scala, but i had to downgrade to a version scala 1.3.3 and also switch my java version to 8. 
 
 # TODO 
-- [ ] Map the lang abbreviation of testtextcat to the WET file language param.
+- [ ] Map the lang abbreviation of testtextcat to the WET file language param. Not just with the wet files but with other language identification models so we can compare them. 
+- [ ] Make sure to filter out the urls that can't be manually crawled.
 - [X] get the graph of instances per language for each language model 
 - [ ] get the graph of instances per language for the manual  curl.
 - [ ] get the diff btw manual curl and WET and look at the common features.
 - [ ] get the language detection ratio comparaison with and without the boilerplate removal 
+- [ ] Check the amount of links that are no longer available.
 
 
 # PROBLEMS 

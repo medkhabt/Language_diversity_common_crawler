@@ -12,7 +12,7 @@ import os
 
 def main():
     try:
-        original_page = requests.get(str(sys.argv[1]))
+        original_page = requests.get(str(sys.argv[1]), timeout=2)
         page = original_page.text.encode('utf-8')	
         any_lang_stop_words = get_all_stop_words()
 	
@@ -23,7 +23,8 @@ def main():
                 print("".join(paragraph['text_nodes']))
 
     except requests.exceptions.InvalidSchema as e: 
-        print("invalid url") 
+        return 0
+    except ConnectionError as  e: 
         return 0
 
 

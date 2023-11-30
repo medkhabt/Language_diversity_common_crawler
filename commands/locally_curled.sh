@@ -19,6 +19,7 @@ do
     then
     echo "$line::::" > cleanest_page.html.tmp
 	python3 boilerplate_removal.py "$line" >> cleanest_page.html.tmp
+    echo "after the boilerplate removal"
     sh lang_id.sh  cleanest_page.html.tmp $output_file 
     fi
     echo "end execution of language identification"
