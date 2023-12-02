@@ -1,0 +1,17 @@
+--- victoria/pavuk/src/css.c	2008-05-30 10:56:05.000000000 +0000
++++ victoria2/pavuk/src/css.c	2008-05-30 09:53:08.000000000 +0000
+@@ -318,10 +318,10 @@
+         {
+           fn = url_to_absolute_url(base, baset, doc_url, sp);
+ 	  if (fn) {
+-          	free_deep_url(urlp);
+-          	_free(urlp);
+-          	urlp = url_parse(fn);
+-          	ASSERT(urlp->type != URLT_FROMPARENT);
++            free_deep_url(urlp);
++            _free(urlp);
++            urlp = url_parse(fn);
++            ASSERT(urlp->type != URLT_FROMPARENT);
+ 	  }
+         }
+         anchor = url_get_anchor_name(urlp);

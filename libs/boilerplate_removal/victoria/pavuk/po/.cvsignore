@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+*.mo
+*.pox
+*.umo
+*.upo
+pavuk.pot

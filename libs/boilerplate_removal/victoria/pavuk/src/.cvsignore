@@ -1,0 +1,7 @@
+Makefile
+Makefile.in
+.deps
+pavuk
+*.o
+*.orig
+*.rej

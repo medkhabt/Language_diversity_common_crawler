@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1.dtd">
+<html>
+<head>
+<title>HTML Annotation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+
+<h1>HTML page annotation tool HOWTO</h1>
+
+<p>The tool consists of several programs written in different programming
+languages.</p>
+
+<h2>Annotation interface</h2>
+
+<p>Annotation is done in the web browser, after typing the URL of the directory
+you installed the tool in, you should get a login screen. There are two modes
+of access: &quot;demo mode&quot; and &quot;regular access mode&quot;.</p>
+
+<h3>Demo mode</h3>
+
+<p>In the demo mode, you can type in a URL of some web page, load it ("Load"
+button), annotate it, and see ("View" button) the result of you annotation.</p>
+
+<p>The type of annotation is selected by clicking on the buttons in the left-top
+corner of the browser window. The annotation itself is done by clicking on the
+beginning and end of the text to be annotated.</p>
+
+<h3>Regular access mode</h3>
+
+<p>After the login, you can select the page group and page for annotation from the
+drop-down menu. The asterisk before the page name marks pages already
+(at least partially) annotated.</p>
+
+<p>As in the demo mode, the type of annotation is selected by clicking on the
+buttons. Result of the annotation is saved automatically when you change the
+page from the menu or by clicking on a <em>Save</em> button. Alternatively, you
+can click on a <em>Next</em> button, which saves the annotation and loads
+following page from the page list.</p>
+
+<h3>Key shortcuts</h3>
+
+<p>For faster navigation, you can use keys instead of clicking on the buttons,
+as summarized in the following table.</p>
+
+<table>
+<tr><th>Action</th><th>Button</th><th>Key</th></tr>
+<tr><td>switch annotation type to <b>Header</b></td><td>Header</td><td><b>h</b> or <b>1</b></td></tr>
+<tr><td>switch annotation type to <b>Text</b></td><td>Text</td><td><b>t</b> or <b>2</b></td></tr>
+<tr><td>switch annotation type to <b>Other</b></td><td>Other</td><td><b>o</b> or <b>3</b></td></tr>
+<tr><td>save page and load next page (regular mode)</td><td>Next</td><td><b>n</b></td></tr>
+<tr><td>save page (regular mode)</td><td>Save</td><td><b>s</b></td></tr>
+<tr><td>undo last annotation</td><td>N/A</td><td><b>u</b></td></tr>
+<tr><td>redo last annotation</td><td>N/A</td><td><b>r</b></td></tr>
+<tr><td>cancel current annotation</td><td>N/A</td><td><b>esc</b></td></tr>
+</table>
+
+<h2>Administration interface</h2>
+
+<p>Administration is done using a command-line interface.</p>
+
+<p>There are two directories with annotation-related stuff. First one must be
+in the web-space accessible tree (a &quot;web directory&quot;). All scripts and
+programs are there, as well as a config file.</p>
+
+<p>The second directory (a &quot;data directory&quot;) should be placed out of
+the reach of the web-space. In this directory, user and group config files, as
+well as the actual annotation data are located.</p>
+
+<h3>Configuration</h3>
+
+<p>The basic configuration file resides in the web dir and specifies basic
+directory paths. It is a plain text file.</p>
+
+<h3>Users</h3>
+
+<p>Users are defined in the file <em>users</em> in the data directory. Every
+line represents one user, passwords may be in a plain text or SHA1 hash format.
+Format of a line is:</p>
+
+<pre>
+login password group1 group2 ...
+</pre>
+
+<p>e.g.</p>
+
+<pre>
+qiq secret new_qiq_group1
+</pre>
+
+<h3>Page groups</h3>
+
+<p>Pages are grouped into so called page groups. These groups are defined in
+the <em>groups</em> directory (within the data directory). Every line in the
+group file contains description of a page to be annotated. Format of a line
+is:</p>
+
+<pre>
+URL status path/error message
+</pre>
+
+<p>e.g.</p>
+
+<pre>
+http://google.com/ OK d7abb22246/http/google.com_80/_._.html
+</pre>
+
+<h3>URL Import</h3>
+
+<p>In order to import new pages, follow these steps:</p>
+<ul>
+<li>edit group file, add URL of pages, one URL per line</li>
+<li>run an <em>./import.pl</em> script. You can use <em>--verbose</em> option to
+see what's going on. Using <em>--reload</em> option you can retry the download
+of given URLs (if something goes wrong).</li>
+<li>The current status of pages can be displayed using a <em>./status.pl</em> script.</li>
+</ul>
+
+<p>You can restrict the scope of the script processing by appending group
+name(s) as the last argument (e.g. <em>./status.pl new_qiq_group1</em>).</p>
+
+<h3>Getting Annotated data</h3>
+
+<p>Result of the annotation process is the original file (possibly converted to
+utf-8 and tidied up by HTML Tidy) with annotation marked using &lt;span&gt;
+element.  You can get these files running <em>./export.pl</em> script. As in
+the previous case, you can specify one or more groups for script to act on.
+The result of this script is the list of paths for the resulting HTML
+files.</p>
+
+</body>
+</html>

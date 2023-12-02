@@ -1,0 +1,270 @@
+Index: src/css.c
+===================================================================
+RCS file: /cvsroot/pavuk/pavuk/src/css.c,v
+retrieving revision 1.9
+diff -u -r1.9 css.c
+--- src/css.c	27 Oct 2005 15:08:03 -0000	1.9
++++ src/css.c	11 Nov 2007 17:14:43 -0000
+@@ -42,18 +42,19 @@
+   char *p;
+   char *stack;
+   char *sp;
+-  int sr, ssz;
++  int sr, ssz, import;
+   dllist *retval = NULL;
+ 
+   ssz = 2 * BUFFER;
+   stack = _malloc(ssz);
+   sr = 0;
++  import = 0;
+ 
+   for(p = stylestr; *p; p++)
+   {
+     if(urlstart)
+     {
+-      if(*p == ')')
++      if(*p == ')' || (import && *p == '"'))
+       {
+         char *pom;
+ 
+@@ -124,12 +125,15 @@
+           free(pom);
+         }
+         urlstart = FALSE;
++	import = 0;
+       }
+       else
+       {
+         SEXPAND(1);
+         stack[sr] = *p;
+         sr++;
++	if (import)
++		import++;
+       }
+       continue;
+     }
+@@ -139,6 +143,12 @@
+       urlstart = TRUE;
+       sr = 0;
+     }
++    if(((p - stylestr) > 8) && !strncasecmp(p - 8, "@import \"", 9))
++    {
++      urlstart = TRUE;
++      sr = 0;
++      import = 1;
++    }
+   }
+ 
+   _free(stack);
+@@ -154,7 +164,7 @@
+   char *p;
+   char *sp;
+   char *stack;
+-  int ssz, sr, l;
++  int ssz, sr, l, import;
+ 
+   sz = strlen(stylestr) + BUFFER;
+   result = _malloc(sz);
+@@ -163,12 +173,13 @@
+   ssz = 2 * BUFFER;
+   stack = _malloc(ssz);
+   sr = 0;
++  import = 0;
+ 
+   for(p = stylestr; *p; p++)
+   {
+     if(urlstart)
+     {
+-      if(*p == ')')
++      if(*p == ')' || (import && *p == '"'))
+       {
+         char *pom;
+ 
+@@ -207,16 +218,26 @@
+ 
+         l = strlen(pom);
+         MEXPAND(l);
+-        result[r] = '\'';
+-        r++;
++	if (!import)
++	{
++          result[r] = '\'';
++          r++;
++	}
+         strcpy(result + r, pom);
+         r += l;
+-        result[r] = '\'';
+-        r++;
+-        result[r] = ')';
+-        r++;
++	if (!import)
++	{
++          result[r] = '\'';
++       	  r++;
++       	  result[r] = ')';
++       	  r++;
++	} else {
++	  result[r] = '"';
++	  r++;
++	}
+ 
+         urlstart = FALSE;
++	import = 0;
+ 
+         _free(pom);
+       }
+@@ -234,6 +255,12 @@
+       urlstart = TRUE;
+       sr = 0;
+     }
++    if(((p - stylestr) > 8) && !strncasecmp(p - 8, "@import \"", 9))
++    {
++      urlstart = TRUE;
++      sr = 0;
++      import = 1;
++    }
+     MEXPAND(1);
+     result[r] = *p;
+     r++;
+@@ -257,7 +284,7 @@
+   char *anchor;
+   char *sp;
+   char *stack;
+-  int ssz, sr, l;
++  int ssz, sr, l, import;
+ 
+   sz = strlen(stylestr) + BUFFER;
+   result = _malloc(sz);
+@@ -266,12 +293,13 @@
+   ssz = 2 * BUFFER;
+   stack = _malloc(ssz);
+   sr = 0;
++  import = 0;
+ 
+   for(p = stylestr; *p; p++)
+   {
+     if(urlstart)
+     {
+-      if(*p == ')')
++      if(*p == ')' || (import && *p == '"'))
+       {
+         char *fn;
+         url *urlp;
+@@ -351,16 +379,26 @@
+ 
+         l = strlen(pom);
+         MEXPAND(l);
+-        result[r] = '\'';
+-        r++;
++	if (!import)
++	{
++          result[r] = '\'';
++          r++;
++	}
+         strcpy(result + r, pom);
+         r += l;
+-        result[r] = '\'';
+-        r++;
+-        result[r] = ')';
+-        r++;
++	if (!import)
++	{
++	  result[r] = '\'';
++          r++;
++          result[r] = ')';
++          r++;
++	} else {
++	  result[r] = '"';
++          r++;
++	}
+ 
+         urlstart = FALSE;
++	import = 0;
+       }
+       else
+       {
+@@ -376,6 +414,12 @@
+       urlstart = TRUE;
+       sr = 0;
+     }
++    if(((p - stylestr) > 8) && !strncasecmp(p - 8, "@import \"", 9))
++    {
++      urlstart = TRUE;
++      sr = 0;
++      import = 1;
++    }
+     MEXPAND(1);
+     result[r] = *p;
+     r++;
+@@ -399,7 +443,7 @@
+   char *oldfn;
+   char *sp;
+   char *stack;
+-  int ssz, sr, l;
++  int ssz, sr, l, import;
+ 
+   sz = strlen(stylestr) + BUFFER;
+   result = _malloc(sz);
+@@ -408,6 +452,7 @@
+   ssz = 2 * BUFFER;
+   stack = _malloc(ssz);
+   sr = 0;
++  import = 0;
+ 
+   oldfn = url_to_urlstr(url_old, FALSE);
+ 
+@@ -415,7 +460,7 @@
+   {
+     if(urlstart)
+     {
+-      if(*p == ')')
++      if(*p == ')' || (import && *p == '"'))
+       {
+         char *pfn;
+         url *urlp;
+@@ -461,16 +506,26 @@
+ 
+         l = strlen(pom);
+         MEXPAND(l);
+-        result[r] = '\'';
+-        r++;
++	if (!import)
++	{
++          result[r] = '\'';
++          r++;
++	}
+         strcpy(result + r, pom);
+         r += l;
+-        result[r] = '\'';
+-        r++;
+-        result[r] = ')';
+-        r++;
++	if (!import)
++	{
++          result[r] = '\'';
++          r++;
++          result[r] = ')';
++          r++;
++	} else {
++          result[r] = '"';
++          r++;
++	}
+ 
+         urlstart = FALSE;
++	import = 0;
+       }
+       else
+       {
+@@ -486,6 +541,12 @@
+       urlstart = TRUE;
+       sr = 0;
+     }
++    if(((p - stylestr) > 8) && !strncasecmp(p - 8, "@import \"", 9))
++    {
++      urlstart = TRUE;
++      sr = 0;
++      import = 1;
++    }
+     MEXPAND(1);
+     result[r] = *p;
+     r++;

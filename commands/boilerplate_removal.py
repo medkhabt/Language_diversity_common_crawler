@@ -23,8 +23,13 @@ def main():
                 print("".join(paragraph['text_nodes']))
 
     except requests.exceptions.InvalidSchema as e: 
+        print("FAILED")
         return 0
     except ConnectionError as  e: 
+        print("FAILED")
+        return 0
+    except Exception as e: 
+        print("FAILED")
         return 0
 
 

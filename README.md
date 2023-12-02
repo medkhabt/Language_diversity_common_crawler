@@ -6,6 +6,8 @@ I compiled the code and got the necessary files to predict the language of the t
 
 - there is some post-proceessing of the results of the testcat executable so i get the language abbreviation without the other parts of the result. 
 
+- I had to change a file containing some constants before compiling the code of langlass language identification executable.
+
 ## Boilerplate 
 - I used web2text lib, that uses scala, but i had to downgrade to a version scala 1.3.3 and also switch my java version to 8. 
 

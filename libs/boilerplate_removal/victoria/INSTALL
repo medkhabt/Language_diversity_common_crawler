@@ -1,0 +1,23 @@
+Requirements:
+	- Linux/UNIX environment
+	- Apache web server with PHP5 installed
+	- Perl 5, Perl modules: HTML::TreeBuilder (HTML-Tree-3.23),
+	  Digest::SHA1, XML::LibXML; install modules using package manager,
+	  cpan or downloaded tar archive. Please adjust PERL5LIB in
+	  bin/prepare.sh in case HTML::TreeBuilder module is not installed
+	  system-wide.
+	- HTML tidy, iconv
+	- Mozilla Firefox 2+ for annotation (other web browsers may not fully
+	  work)
+
+Installation:
+- untar archive
+- run ./install.sh to create a config file and build pavuk web downloader
+  (patched to correctly download all css files)
+- set web server access for victoria/www directory (other directories should
+  not be accessible using the web server for security reasons)
+- edit config, users and groups/* files
+- run bin/import.pl to download pages in groups
+- use Firefox to begin annotation
+
+Note: this is a first & quick-and-dirty release of the Victoria annotation tool

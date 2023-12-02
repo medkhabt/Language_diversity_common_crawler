@@ -6,24 +6,52 @@
 # get only the url from the file. 
 
 echo "start of the script curl"
+
 output_file="result_curl"
-rm $output_file.log 2>/dev/null 
-sed 's/\(.*\)::.*::.*::.*/\1\n/g' $1 > seed.tmp 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd );
+LOGS_DIR="$SCRIPT_DIR/../logs"
+rm $LOGS_DIR/$output_file.log 2>/dev/null 
+
+sed 's/\(.*\)::.*::.*::.*/\1\n/g' $LOGS_DIR/$1 | sed '/^[[:space:]]*$/d' > .seed.tmp 
 
 # get the html page 
 
 while IFS= read -r line 
 do 
-    echo "start curling"
+    
     if [ "$line" != "" ]
     then
-    echo "$line::::" > cleanest_page.html.tmp
-	python3 boilerplate_removal.py "$line" >> cleanest_page.html.tmp
-    echo "after the boilerplate removal"
-    sh lang_id.sh  cleanest_page.html.tmp $output_file 
+    STATS="$line::::"
+	python3 boilerplate_removal.py "$line" > .content.tmp 
+    
+    # I need to check here if we had an exception or if after the removal the text has nothing inside 
+	content=$( head -n 1 .content.tmp  )
+	
+	if [[ "$content" == "" ]]
+	then
+	    content="EMPTY";
+	fi
+	if [ "$content" == "FAILED" ] || [ "$content" == "EMPTY" ] 
+	then 
+	    if [ "$content" == "FAILED" ]
+	    then 
+		# Remove the url from the common_crawl result as it is no longer available, to match the stats
+		# TODO it is slow to remove each line at a time, it would be better to save the lines to delete and delete them at once.
+		# TODO we should save the failed urls in an other file, as it does not belong to a file related to a language identification model
+		sed "/$(echo $line | sed "s,\/,\\\/,g" )/d" $LOGS_DIR/$1 > .$1.tmp
+		
+		cat .$1.tmp> $LOGS_DIR/$1
+	    fi
+	    echo "$STATS::$content" >> $LOGS_DIR/$output_file.log 
+		
+	else 
+	    echo "$STATS"> .cleanest_page.html.tmp
+	    echo "$content" >> .cleanest_page.html.tmp 
+	    sh lang_id.sh  .cleanest_page.html.tmp $output_file 
+	    
+	fi 
     fi
-    echo "end execution of language identification"
-done < seed.tmp 
+done < .seed.tmp 
 
 
 echo "end of the script curl"
