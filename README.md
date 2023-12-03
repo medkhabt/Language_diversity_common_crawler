@@ -12,6 +12,7 @@ I compiled the code and got the necessary files to predict the language of the t
 - I used web2text lib, that uses scala, but i had to downgrade to a version scala 1.3.3 and also switch my java version to 8. 
 
 # TODO 
+- [ ] Compute graphs based on the size and language detected by cc.
 - [ ] Map the lang abbreviation of testtextcat to the WET file language param. Not just with the wet files but with other language identification models so we can compare them. 
 - [ ] Make sure to filter out the urls that can't be manually crawled.
 - [ ] Take in consideration the pages that are empty after boilerplate removal.
@@ -26,9 +27,6 @@ I compiled the code and got the necessary files to predict the language of the t
 # PROBLEMS 
 - not optimized, take a lot of time to process.
 
-- There was a problem with the encoding, that is not showing properly during the language identification step due to different encodings available on curled websites. 
-
-- Handle the exception when the website is no longer available.
 
 - Website with small paragraph, are considered entierly boilerplate, maybe in that case i should try to identify the language with boilerpalte removal for stats. 
 for example some russian websites have 'charset=windows-1251' so i had to check which charset is encoded in and translate it to utf-8 charset. 
