@@ -12,6 +12,8 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd );
 LOGS_DIR="$SCRIPT_DIR/../logs"
 rm $LOGS_DIR/$output_file.log 2>/dev/null 
 
+cat $LOGS_DIR/$1 > $LOGS_DIR/local_$1
+
 sed 's/\(.*\)::.*::.*::.*/\1\n/g' $LOGS_DIR/$1 | sed '/^[[:space:]]*$/d' > .seed.tmp 
 
 # get the html page 
@@ -42,6 +44,9 @@ do
 		
 		cat .$1.tmp> $LOGS_DIR/$1
 	    fi
+		# TODO I need to change the name of this log, as it needs to be variable to the boilerplate removal technique.
+		sed "/$(echo $line | sed "s,\/,\\\/,g" )/d" $LOGS_DIR/local_$1 > .$1.tmp
+		cat .$1.tmp > $LOGS_DIR/local_$1
 	    echo "$STATS::$content" >> $LOGS_DIR/$output_file.log 
 		
 	else 

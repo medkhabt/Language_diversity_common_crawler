@@ -10,7 +10,7 @@ while IFS= read -r line
 do
 	if [[ -z "${count_words[$line]}" ]]
 	then 
-		let "count_words[$line]=0"
+		let "count_words[$line]=1"
 	else
 		let "count_words[$line]=${count_words[$line]} + 1"
 	fi		

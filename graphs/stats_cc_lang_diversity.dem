@@ -5,8 +5,11 @@ set datafile missing "-"
 set xtics nomirror rotate by -45
 set key noenhanced 
 
+#set logscale y 2 
+
 
 set style data linespoints 
-plot 'count_big.dat' using 2:xtic(1) title "testtext"
+plot 'concat_cc_curl.dat' using 2:xtic(1) title "result cc", \
+    '' using 3 title "result curl"
 
 
