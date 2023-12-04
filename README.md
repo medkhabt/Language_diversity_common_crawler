@@ -14,21 +14,25 @@ I compiled the code and got the necessary files to predict the language of the t
 # TODO 
 - [ ] Compute graphs based on the size and language detected by cc.
 - [ ] Map the lang abbreviation of testtextcat to the WET file language param. Not just with the wet files but with other language identification models so we can compare them. 
-- [ ] Make sure to filter out the urls that can't be manually crawled.
-- [ ] Take in consideration the pages that are empty after boilerplate removal.
+- [ ] Abstract the language identification script, there are some parts that are repetetive. 
+- [X] Make sure to filter out the urls that can't be manually crawled.
+- [X] Take in consideration the pages that are empty after boilerplate removal. the empty urls are removed from the stats, when comparing the cc to the locally curled result.
 - [X] get the graph of instances per language for each language model 
-- [ ] get the graph of instances per language for the manual  curl.
+- [X] get the graph of instances per language for the manual  curl.
 - [ ] get the diff btw manual curl and WET and look at the common features.
 - [ ] get the language detection ratio comparaison with and without the boilerplate removal 
 - [ ] Check the amount of links that are no longer available.
 - [ ] Place the script.py in the command directory
+- [ ] Do the check of texts that their language can't be detected by the language identification of 'whatlang'
 
 
 # PROBLEMS 
 - not optimized, take a lot of time to process.
 
+- Languages that are not part of the UTF-8 encoding. ( at least i got an error for the language identification model whatlang `Error { kind: InvalidData, message: "stream did not contain valid UTF-8" }`
 
 - Website with small paragraph, are considered entierly boilerplate, maybe in that case i should try to identify the language with boilerpalte removal for stats. 
 for example some russian websites have 'charset=windows-1251' so i had to check which charset is encoded in and translate it to utf-8 charset. 
 
+- There is a problem with the name 'Russian' in russian in the graph, i had to change it to the english version.
 

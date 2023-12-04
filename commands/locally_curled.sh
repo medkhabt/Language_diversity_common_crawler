@@ -7,7 +7,10 @@
 
 echo "start of the script curl"
 
-output_file="result_curl"
+# first arg is result_log to process
+# second arg is the script used for the language identification
+# third arg is the name of the output file
+output_file=$3
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd );
 LOGS_DIR="$SCRIPT_DIR/../logs"
 rm $LOGS_DIR/$output_file.log 2>/dev/null 
@@ -52,7 +55,8 @@ do
 	else 
 	    echo "$STATS"> .cleanest_page.html.tmp
 	    echo "$content" >> .cleanest_page.html.tmp 
-	    sh lang_id.sh  .cleanest_page.html.tmp $output_file 
+	    # the language identification script
+	    sh $2 .cleanest_page.html.tmp $output_file 
 	    
 	fi 
     fi
