@@ -9,7 +9,7 @@ set key noenhanced
 
 
 set style data linespoints 
-plot 'concat_s_new_lang_id.dat' using 2:xtic(1) title "result cc", \
+plot 'test.dat.dat' using 2:xtic(1) title "result cc", \
     '' using 3 title "result curl"
 
 
