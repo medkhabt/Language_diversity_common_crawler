@@ -11,7 +11,7 @@ bash pre_step_for_count.sh $1.tmp > .first_count.tmp
 while IFS= read -r line 
 do 
     lang=$( echo $line | awk -F " " '{print $1}')  
-    key_lang=$(cat /Users/medkhalil/dev/phd_track/wet_parser_python/data/language_identification/languages_mapping.txt | grep -w "$lang" | awk -F " " '{print $1}');
+    key_lang=$(cat ../data/language_identification/languages_mapping.txt | grep -w "$lang" | awk -F " " '{print $1}');
     echo "the key language is '$key_lang'" 
      if [[ "$key_lang" != "" ]]
 	    then
@@ -40,7 +40,7 @@ while IFS= read -r line
 do 
     lang=$( echo $line | awk -F " " '{print $1}')  
     echo "the Language is : $lang"
-    key_lang=$(cat /Users/medkhalil/dev/phd_track/wet_parser_python/data/language_identification/languages_mapping.txt | grep -w "$lang" | awk -F " " '{print $1}');
+    key_lang=$(cat ../data/language_identification/languages_mapping.txt | grep -w "$lang" | awk -F " " '{print $1}');
     echo "the key language is '$key_lang'" 
      if [[ "$key_lang" != "" ]]
 	    then

@@ -1,0 +1,12 @@
+set term png size 1280,720
+set output 'cc_header.png'
+set datafile missing "-"
+set xtics nomirror rotate by -45
+set key noenhanced 
+
+set logscale y  
+
+
+set style data linespoints 
+plot 'graph_cc_header.dat' using 2:xtic(1) title "curl header", \
+    '' using 3 title "cc"

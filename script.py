@@ -2,12 +2,14 @@ import json
 import requests 
 import os
 import time 
+import sys
 from warcio import ArchiveIterator
 
 print("start test")
 os.system("rm commands/result_cc.log")
+output_name="{}_{}_{}".format(sys.argv[2],sys.argv[1],sys.argv[3])
 # the dynamic part.
-wet_url = 'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/wet/CC-MAIN-20230921073711-20230921103711-00000.warc.wet.gz' 
+wet_url = 'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/wet/CC-MAIN-20230921073711-20230921103711-{}.warc.wet.gz'.format(sys.argv[3]) 
 
 bundle = [];
 r = requests.get(wet_url, stream=True)
@@ -32,7 +34,10 @@ while (True):
 		a.decode('utf-8').replace("'", "`")
             )	
 # How to concat the results of the resulted log file with the bundle.
-            os.system("echo '{}'  > tmp.log | sh commands/lang_id_whatlang.sh tmp.log result_cc_whatlang".format(content)); 
+# "python cc_boilerplate_removal.py '{}' >
+# 
+#            os.system("python cc_boilerplate_removal.py '{}' > tmp.log | bash commands/lang_id_{}.sh tmp.log {}".format(content, sys.argv[1], output_name)); 
+            os.system("echo '{}' > tmp.log | bash commands/lang_id_{}.sh tmp.log {}".format(content, sys.argv[1], output_name)); 
             i = i + 1;
     except StopIteration as e: 
         print("end of the file") 
@@ -45,5 +50,3 @@ os.system("rm tmp.log")
 #Content-Length
 
 r.close();
-
-

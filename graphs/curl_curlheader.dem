@@ -1,0 +1,11 @@
+set term png size 1280,720
+set output 'curl_curlheader.png'
+set datafile missing "-"
+set xtics nomirror rotate by -45
+set key noenhanced 
+
+set logscale y  
+
+
+plot 'graph_curl_and_curl_header.dat' using 2:xtic(1) title "curl", \
+    '' using 3 title "curl header"
