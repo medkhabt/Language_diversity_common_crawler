@@ -1,9 +1,18 @@
+#WARC Extraction
 from fastwarc.warc import ArchiveIterator 
 from fastwarc.stream_io import GZipStream
+
+
+#Boilerplate removal
 from resiliparse.extract.html2text import extract_plain_text
+
+#Language identification
 from resiliparse.parse.lang import detect_fast as d
 import langid
 import pycld2 as cld2  
+
+#Util in Traitement
+from bs4 import BeautifulSoup
 import regex 
 import io
 from os import path
@@ -24,6 +33,17 @@ def main():
     else :
         print("Failed")
 def fill_dataset(dataset, record, content):
+    # META LANGUAGE INFO 
+    soup = BeautifulSoup(content, 'html.parser')
+    meta_language = None
+    for meta in soup.find_all('meta') : 
+        if meta.get('name') == 'language': 
+            meta_language = meta.get('content')
+    if meta_language is None: 
+        html_tag = soup.find('html')
+        if html_tag is not None: 	 
+             meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else None 
+    # HTTP LANGUAGE HEADER 
     http_language_header = record.http_headers.get('Accept-Language') if record.http_headers is not None else None
     http_language_header =  http_language_header.split(",")[0] if http_language_header is not None else None
     language_identification_models = ['detect_fast', 'langid', 'cld2'] 
@@ -31,7 +51,8 @@ def fill_dataset(dataset, record, content):
 	'uri' : record.headers.get('WARC-Target-URI'),
 	'id' : record.headers.get('WARC-Record-ID'),
 	'len' : record.headers.get('Content-Length'),
-        'http_header' : http_language_header
+        'http_header' : http_language_header,
+        'meta' : meta_language
     }
     lang_idents = []
     for lang_id_mdl in language_identification_models: 
@@ -86,7 +107,7 @@ def decode(record, charset):
             return 1;
 	
 # TODO: check for the http_content_type incase the charset doesn't exist. For now i don't find any problems using just the charset. But I don't konw if the results are actually correct. 
-def save_cc(res, offset=0, size=10):
+def save_cc(res, offset=0, size=1000):
     dataset = [] 
     counter = 0;
     enc_pr_ctr = 0;
