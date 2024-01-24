@@ -1,0 +1,4 @@
+fastwarc 
+requests
+resiliparse
+langid
