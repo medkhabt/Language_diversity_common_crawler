@@ -14,25 +14,24 @@ import json
 import time
 
 def main(): 
-    wet_url = 'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-00001.warc.gz'
-#'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/wet/CC-MAIN-20230921073711-20230921103711-00000.warc.wet.gz'
+    warc_url = 'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-00001.warc.gz'
 
     bundle = [];
-    res = requests.get(wet_url); 
+    res = requests.get(warc_url); 
     if res.status_code == 200: 
-        print(f'Downloaded: {str(wet_url)}')
+        print(f'Downloaded: {str(warc_url)}')
         save_cc(res)
     else :
         print("Failed")
 def fill_dataset(dataset, record, content):
+    http_language_header = record.http_headers.get('Accept-Language') if record.http_headers is not None else None
+    http_language_header =  http_language_header.split(",")[0] if http_language_header is not None else None
     language_identification_models = ['detect_fast', 'langid', 'cld2'] 
     res = {
 	'uri' : record.headers.get('WARC-Target-URI'),
 	'id' : record.headers.get('WARC-Record-ID'),
-#		'lang' : record.headers.get('WARC-Identified-Content-Language'),
 	'len' : record.headers.get('Content-Length'),
-#	    'content' : record.reader.read().decode('utf-8')
-#	    'content' : record_content 
+        'http_header' : http_language_header
     }
     lang_idents = []
     for lang_id_mdl in language_identification_models: 
@@ -87,7 +86,7 @@ def decode(record, charset):
             return 1;
 	
 # TODO: check for the http_content_type incase the charset doesn't exist. For now i don't find any problems using just the charset. But I don't konw if the results are actually correct. 
-def save_cc(res, offset=0, size=10000):
+def save_cc(res, offset=0, size=10):
     dataset = [] 
     counter = 0;
     enc_pr_ctr = 0;
