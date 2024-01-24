@@ -3,7 +3,8 @@ from fastwarc.stream_io import GZipStream
 from resiliparse.extract.html2text import extract_plain_text
 from resiliparse.parse.lang import detect_fast as d
 import langid
-
+import pycld2 as cld2  
+import regex 
 import io
 from os import path
 import requests
@@ -24,16 +25,20 @@ def main():
     else :
         print("Failed")
 def fill_dataset(dataset, record, content):
-    language = language_identification(boilerplate_removal(content), 'langid');
-    dataset.append({
+    language_identification_models = ['detect_fast', 'langid', 'cld2'] 
+    res = {
 	'uri' : record.headers.get('WARC-Target-URI'),
 	'id' : record.headers.get('WARC-Record-ID'),
 #		'lang' : record.headers.get('WARC-Identified-Content-Language'),
-	'lang' : language,
 	'len' : record.headers.get('Content-Length'),
 #	    'content' : record.reader.read().decode('utf-8')
 #	    'content' : record_content 
-    })
+    }
+    lang_idents = []
+    for lang_id_mdl in language_identification_models: 
+        lg_id = language_identification(boilerplate_removal(content), lang_id_mdl) 
+        res[lang_id_mdl] =  '' if lg_id == 1 else  lg_id  
+    dataset.append(res)
 def boilerplate_removal(content): 
     return extract_plain_text(content, main_content=True); 
 
@@ -42,6 +47,16 @@ def language_identification(content, language_model):
         return d(content) 
     elif language_model == 'langid' : 
         return langid.classify(content) 
+    elif language_model == 'cld3' : 
+        return cld3.get_language(content) 
+    elif language_model == 'cld2' : 
+        try: 
+# source [https://github.com/aboSamoor/polyglot/issues/71#issuecomment-707997790]
+            RE_BAD_CHARS = regex.compile(r"[\p{Cc}\p{Cs}]+")
+            return cld2.detect(RE_BAD_CHARS.sub("", content))[2][0] 
+        except Exception as e : 
+            print(e)
+            return 1
     else:
         return 1;
 def decode(record, charset): 

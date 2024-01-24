@@ -10,3 +10,4 @@ web2text/*
 libs
 .DS_Store
 warc_temp.warc.gz
+data/cc/out/
