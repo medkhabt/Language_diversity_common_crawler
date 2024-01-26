@@ -1,4 +1,24 @@
+# Second Version 
 
+To generate graphs from a dem file and dat file we use 'commands/fasrawc_generate_graph_comparaison.sh', there is a split to the data that we have as there are many langauges that are detected so we need to split them into multiple graphs for visibility purposes 
+
+There is only one script for the generation of the file with this format : META_TAG HEADER_RESPONSE LI_MODEL1 .. LI_MODELN 
+
+spaces work the best for the generation of the graphs later on. 
+
+You will see 3 python scripts that represnt 3 implementation of the same functionnality: 
+
+`cc_fastwarc.py`
+`concurrency_cc_fastwarc.py`
+`sequential_cc_fastwarc.py`
+
+it's an experiment to test which implemenation is faster. For the sequential is the fastest. I will need to work on this more.
+
+the second bash file is `commands/count_fastwarc_result.sh` which counts the number of occurences of a language in the each model. the output is used in the script that was first mentionned `commands/fasrawc_generate_graph_comparaison.sh`
+
+the generated graphs are in png format in the graphs/images/{name_of_dat_file_used}
+
+# First Version 
 - script working with testextcat cpp implementation. 
 I compiled the code and got the necessary files to predict the language of the text. ( executable + files in commands/.libs + conf file fpdb.conf) and also i had to specify the path to some language files used before compilation in the source code lib.
 

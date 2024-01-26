@@ -11,3 +11,5 @@ libs
 .DS_Store
 warc_temp.warc.gz
 data/cc/out/
+graphs/dat/*
+graphs/images/*
