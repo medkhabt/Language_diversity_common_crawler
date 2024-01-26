@@ -51,29 +51,29 @@ def fill_dataset(dataset, record, content):
 	'uri' : record.headers.get('WARC-Target-URI'),
 	'id' : record.headers.get('WARC-Record-ID'),
 	'len' : record.headers.get('Content-Length'),
-        'http_header' : http_language_header,
-        'meta' : meta_language
+        'http_header' : http_language_header if http_language_header is not None else '-',
+        'meta' : meta_language if meta_language is not None else '-'
     }
     lang_idents = []
     for lang_id_mdl in language_identification_models: 
         lg_id = language_identification(boilerplate_removal(content), lang_id_mdl) 
-        res[lang_id_mdl] =  '' if lg_id == 1 else  lg_id  
+        res[lang_id_mdl] =  'un' if lg_id == 1 else  lg_id  
     dataset.append(res)
 def boilerplate_removal(content): 
     return extract_plain_text(content, main_content=True); 
 
 def language_identification(content, language_model):
     if language_model == 'detect_fast': 
-        return d(content) 
+        return d(content)[0]
     elif language_model == 'langid' : 
-        return langid.classify(content) 
+        return langid.classify(content)[0] 
     elif language_model == 'cld3' : 
         return cld3.get_language(content) 
     elif language_model == 'cld2' : 
         try: 
 # source [https://github.com/aboSamoor/polyglot/issues/71#issuecomment-707997790]
             RE_BAD_CHARS = regex.compile(r"[\p{Cc}\p{Cs}]+")
-            return cld2.detect(RE_BAD_CHARS.sub("", content))[2][0] 
+            return cld2.detect(RE_BAD_CHARS.sub("", content))[2][0][1] 
         except Exception as e : 
             print(e)
             return 1
@@ -107,7 +107,7 @@ def decode(record, charset):
             return 1;
 	
 # TODO: check for the http_content_type incase the charset doesn't exist. For now i don't find any problems using just the charset. But I don't konw if the results are actually correct. 
-def save_cc(res, offset=0, size=1000):
+def save_cc(res, offset=0, size=10000):
     dataset = [] 
     counter = 0;
     enc_pr_ctr = 0;
@@ -143,7 +143,9 @@ def save_cc(res, offset=0, size=1000):
 
     with open(f'data/cc/out/test', 'w', encoding='utf-8') as f: 
 # Found a problem with the max caraters allowed in a single line, the process get killed.
-        json.dump(dataset, f, ensure_ascii = False, indent=2)
+#        json.dump(dataset, f, ensure_ascii = False, indent=2)
+        for dr in dataset  :
+            f.write(f"{dr['meta']} {dr['http_header']} {dr['detect_fast']} {dr['langid']} {dr['cld2']}\n")
     print (f'Done: ')
 
 
