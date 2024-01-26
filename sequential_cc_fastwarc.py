@@ -32,18 +32,39 @@ def main():
         save_cc(res)
     else :
         print("Failed")
-def fill_dataset(dataset, record, content):
-    # META LANGUAGE INFO 
-    soup = BeautifulSoup(content, 'html.parser')
-    meta_language = None
-    for meta in soup.find_all('meta') : 
-        if meta.get('name') == 'language': 
-            meta_language = meta.get('content')
-    if meta_language is None: 
-        html_tag = soup.find('html')
-        if html_tag is not None: 	 
-             meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else None 
-    # HTTP LANGUAGE HEADER 
+def unknowns(dic, res): 
+    for key in res.keys():
+        if(res[key] == 'un'): 
+            dic[key] = dic[key] + 1 
+# TODO check also when a model gives a language but the other two doesn't.
+# This should be generealized if needed, i only take in consideration that we only have 3 identificaiton language models.
+def check_accuracy(dic, res):
+    if(res['detect_fast'] == res['langid'] and res['detect_fast'] != res['cld2']):
+        dic['cld2'] = dic['cld2'] + 1 
+    elif(res['detect_fast'] == res['cld2'] and res['detect_fast'] != res['langid'] ):
+        dic['langid'] = dic['langid'] + 1 
+    elif(res['langid'] == res['cld2'] and res['detect_fast'] != res['langid'] ):
+        dic['detect_fast'] = dic['detect_fast'] + 1 
+# dataset : the dict containing the info needed from warc
+# record : the recode object representing one warc file. 
+# content: raw html page 
+# accuracy : dict containng the accuracy of a language identification model
+def fill_dataset(dataset, record, content, accuracy, unknowns_dic):
+    # META LANGUAGE INFO  
+    try: 
+        soup = BeautifulSoup(content, 'html.parser')
+        meta_language = None
+        for meta in soup.find_all('meta') : 
+            if meta.get('name') == 'language': 
+                meta_language = meta.get('content')
+        if meta_language is None: 
+            html_tag = soup.find('html')
+            if html_tag is not None: 	 
+                meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else None 
+    except AssertionError as e: 
+        print(e) 
+        meta_language = None
+        # HTTP LANGUAGE HEADER 
     http_language_header = record.http_headers.get('Accept-Language') if record.http_headers is not None else None
     http_language_header =  http_language_header.split(",")[0] if http_language_header is not None else None
     language_identification_models = ['detect_fast', 'langid', 'cld2'] 
@@ -57,7 +78,10 @@ def fill_dataset(dataset, record, content):
     lang_idents = []
     for lang_id_mdl in language_identification_models: 
         lg_id = language_identification(boilerplate_removal(content), lang_id_mdl) 
-        res[lang_id_mdl] =  'un' if lg_id == 1 else  lg_id  
+## detect_fast uses unknown instead of un.
+        res[lang_id_mdl] = 'un' if lg_id == 1 or lg_id == 'unknown' else  lg_id
+    check_accuracy(accuracy, res)
+    unknowns(unknowns_dic, res)
     dataset.append(res)
 def boilerplate_removal(content): 
     return extract_plain_text(content, main_content=True); 
@@ -116,6 +140,8 @@ def save_cc(res, offset=0, size=10000):
     res_bytesio = io.BytesIO(res.content)
     res_stream = GZipStream(res_bytesio)
     dataset = []
+    accuracy = {'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
+    unknowns_dic = {'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
     for record in ArchiveIterator(res_bytesio):
         if counter < offset : 
             continue; 
@@ -134,19 +160,23 @@ def save_cc(res, offset=0, size=10000):
             continue;
 # TODO don't really need the else
         else: 
-            fill_dataset(dataset, record, res)
+            fill_dataset(dataset, record, res,accuracy,unknowns_dic)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
         counter = counter + 1
 # For the second try we just break and ignore that link
     res_bytesio.close()
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
 
-    with open(f'data/cc/out/test', 'w', encoding='utf-8') as f: 
+    with open(f'logs/test', 'w', encoding='utf-8') as f: 
 # Found a problem with the max caraters allowed in a single line, the process get killed.
 #        json.dump(dataset, f, ensure_ascii = False, indent=2)
         for dr in dataset  :
             f.write(f"{dr['meta']} {dr['http_header']} {dr['detect_fast']} {dr['langid']} {dr['cld2']}\n")
+    with open(f'logs/test_accuracy', 'w', encoding='utf-8') as f: 
+        f.write(f"{accuracy['detect_fast']} {accuracy['langid']} {accuracy['cld2']}")
+
+    with open(f'logs/test_unknowns', 'w', encoding='utf-8') as f: 
+        f.write(f"{unknowns_dic['detect_fast']} {unknowns_dic['langid']} {unknowns_dic['cld2']}")
+
     print (f'Done: ')
-
-
 main()
