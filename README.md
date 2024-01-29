@@ -40,6 +40,7 @@ I compiled the code and got the necessary files to predict the language of the t
 - [X] Take in consideration the pages that are empty after boilerplate removal. the empty urls are removed from the stats, when comparing the cc to the locally curled result.
 - [X] get the graph of instances per language for each language model 
 - [X] get the graph of instances per language for the manual  curl.
+- [ ] Case were meta or http header info has '|' should be traited.
 - [ ] get the diff btw manual curl and WET and look at the common features.
 - [ ] get the language detection ratio comparaison with and without the boilerplate removal 
 - [ ] Check the amount of links that are no longer available.

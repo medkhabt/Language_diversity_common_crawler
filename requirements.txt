@@ -5,3 +5,4 @@ langid
 pycld2
 regex
 beautifulsoup4
+timeit
