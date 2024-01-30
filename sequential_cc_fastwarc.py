@@ -106,6 +106,7 @@ def boilerplate_removal(content):
     return extract_plain_text(content, main_content=True); 
 # TODO modify the code so we store the perf of each language model to be saved on a file at the end.
 # TODO Refactor code, repeated if condition
+# TODO hebrew language has two codes in the iso norm. cld2 uses the old one 'iw' au lieu de 'he' that is used by the other two models.
 def language_identification(content, language_model, perf_dic):
     if language_model == 'detect_fast': 
         if perf_dic['perf'] == 1: 
