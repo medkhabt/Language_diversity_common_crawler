@@ -42,26 +42,27 @@ def main():
         print("Failed")
 def unknowns(dic, res): 
     for key in res.keys():
-        if(res[key] == 'un'): 
-            dic[key] = dic[key] + 1 
+        if res[key] is not None and type(res[key]) is not str and 'lang' in res[key].keys():
+            if(res[key]['lang'] == 'un'): 
+                dic[key] = dic[key] + 1 
 # TODO check also when a model gives a language but the other two doesn't.
 # I assumed that what's unknown for the langid model is 'en', in case one other model couldn't identify it is high probable that the 'en' means unknown in the langid identification.
 # This should be generealized if needed, i only take in consideration that we only have 3 identificaiton language models.
 def check_accuracy(dic, res):
-    if(res['detect_fast'] == res['langid'] and res['detect_fast'] != res['cld2']):
+    if(res['detect_fast']['lang'] == res['langid']['lang'] and res['detect_fast']['lang'] != res['cld2']['lang']):
         dic['cld2']['wrong'] =  dic['cld2']['wrong'] + 1 
-    elif(res['detect_fast'] == res['cld2'] and res['detect_fast'] != res['langid'] ):
+    elif(res['detect_fast']['lang'] == res['cld2']['lang'] and res['detect_fast']['lang'] != res['langid']['lang'] ):
         dic['langid']['wrong'] = dic['langid']['wrong'] + 1 
-    elif(res['langid'] == res['cld2'] and res['detect_fast'] != res['langid'] ):
+    elif(res['langid']['lang'] == res['cld2']['lang'] and res['detect_fast'] != res['langid']['lang'] ):
         dic['detect_fast']['wrong'] = dic['detect_fast']['wrong'] + 1 
 
-    if(res['detect_fast'] != 'un' and res['detect_fast'] != 'en' and res['langid'] == 'en' and res['cld2'] == 'un') : 
+    if(res['detect_fast']['lang'] != 'un' and res['detect_fast']['lang'] != 'en' and res['langid']['lang'] == 'en' and res['cld2']['lang'] == 'un') : 
          dic['detect_fast']['uniq'] = dic['detect_fast']['uniq'] + 1
-    elif(res['detect_fast'] == 'un' and res['langid'] != 'en' and res['cld2'] == 'un') : 
+    elif(res['detect_fast']['lang'] == 'un' and res['langid']['lang'] != 'en' and res['cld2']['lang'] == 'un') : 
          dic['langid']['uniq'] = dic['langid']['uniq'] + 1
-    elif(res['detect_fast'] == 'un' and res['langid'] == 'en' and res['cld2'] != 'un' and res['cld2'] != 'en') : 
+    elif(res['detect_fast']['lang'] == 'un' and res['langid']['lang'] == 'en' and res['cld2']['lang'] != 'un' and res['cld2']['lang'] != 'en') : 
          dic['cld2']['uniq'] = dic['cld2']['uniq'] + 1
-    if( (res['detect_fast'] == res['langid'] and res['langid'] == res['cld2']) or ( res['detect_fast'] == 'un' and res['langid'] == 'en' and res['cld2'] == 'un') ):
+    if( (res['detect_fast']['lang'] == res['langid']['lang'] and res['langid']['lang'] == res['cld2']['lang']) or ( res['detect_fast']['lang'] == 'un' and res['langid']['lang'] == 'en' and res['cld2']['lang'] == 'un') ):
         dic['match'] = dic['match'] + 1
 # dataset : the dict containing the info needed from warc
 # record : the recode object representing one warc file. 
@@ -97,7 +98,7 @@ def fill_dataset(dataset, record, content, accuracy, unknowns_dic, perf_dict):
     for lang_id_mdl in language_identification_models: 
         lg_id = language_identification(boilerplate_removal(content), lang_id_mdl, perf_dict) 
 ## detect_fast uses unknown instead of un.
-        res[lang_id_mdl] = 'un' if lg_id == 1 or lg_id == 'unknown' or len(lg_id) > 2 else  lg_id
+        res[lang_id_mdl] = {'lang':'un', 'precision' : lg_id['precision']} if lg_id == 1 or lg_id['lang'] == 'unknown' or len(lg_id) > 2 else  lg_id
     check_accuracy(accuracy, res)
     unknowns(unknowns_dic, res)
     accuracy['size'] = accuracy['size'] + 1
@@ -116,7 +117,7 @@ def language_identification(content, language_model, perf_dic):
             duration = time.process_time() - start 
             perf_dic['detect_fast'] = duration  + 1
 #            print(f"cpu time for detect_fast : {duration}")
-        return d(content)[0]
+        return {'lang': d(content)[0], 'precision': d(content)[1]}
     elif language_model == 'langid' : 
         if perf_dic['perf'] == 1: 
             start = time.process_time()
@@ -125,7 +126,7 @@ def language_identification(content, language_model, perf_dic):
             duration = time.process_time() - start 
             perf_dic['langid'] = duration + 1
 #            print(f"cpu time for langid: {duration}")
-        return langid.classify(content)[0] 
+        return {'lang': langid.classify(content)[0], 'precision' :  langid.classify(content)[1]}
     elif language_model == 'cld3' : 
         if perf_dic['perf'] == 1: 
             start = time.process_time()
@@ -134,7 +135,18 @@ def language_identification(content, language_model, perf_dic):
             duration = time.process_time() - start 
             perf_dic['cld3'] = duration + 1
 #            print(f"cpu time for cld3: {duration}")
-        return cld3.get_language(content) 
+# Language prediction works with normalized probability,
+# there is also a is_reliable field we can use it as a threshhold ? if it's not reliable we just return unknown
+# The resut is a tuple of (isReliable, textBytesFOUnd, details) 
+# the details object is a tuple of up to three languages each one of them in a form of a tuple with 
+# details:  Tuple of up to three detected languages, where each is              
+#            tuple is (languageName, languageCode, percent, score).  percent is  
+#            what percentage of the original text was detected as this language  
+#            and score is the confidence score for that language. 
+
+        return {'lang': cld3.get_language(content).language, 'precision' : cld3.get_language(content).probability} 
+# We also have a isrelaible field here that we can use a threashold ? 
+# TODO Need to check if the first detected languae is the most present in the content.
     elif language_model == 'cld2' : 
         try: 
 # source [https://github.com/aboSamoor/polyglot/issues/71#issuecomment-707997790]
@@ -146,7 +158,7 @@ def language_identification(content, language_model, perf_dic):
                 duration = time.process_time() - start 
 #                print(f"cpu time for cld2: {duration}")
                 perf_dic['cld2'] = duration + 1
-            return cld2.detect(RE_BAD_CHARS.sub("", content))[2][0][1] 
+            return {'lang': cld2.detect(RE_BAD_CHARS.sub("", content))[2][0][1], 'precision': cld2.detect(RE_BAD_CHARS.sub("", content))[2][0][3]} 
         except Exception as e : 
             print(e)
             return 1
@@ -180,7 +192,7 @@ def decode(record, charset):
             return 1;
 	
 # TODO: check for the http_content_type incase the charset doesn't exist. For now i don't find any problems using just the charset. But I don't konw if the results are actually correct. 
-def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=100):
+def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=100000):
     dataset = [] 
     counter = 0;
     enc_pr_ctr = 0;
@@ -220,9 +232,9 @@ def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=100):
     with open(f'logs/{seg_number}.log', 'w', encoding='utf-8') as f: 
 # Found a problem with the max caraters allowed in a single line, the process get killed.
 #        json.dump(dataset, f, ensure_ascii = False, indent=2)
-        f.write(f"meta|http_header|detectfast|langid|cld2\n")
+        f.write(f"meta|http_header|detectfast|langid|cld2|pre-detectfast|pre-langid|pre-cld2\n")
         for dr in dataset  :
-            f.write(f"{dr['meta']}|{dr['http_header']}|{dr['detect_fast']}|{dr['langid']}|{dr['cld2']}\n")
+            f.write(f"{dr['meta']}|{dr['http_header']}|{dr['detect_fast']['lang']}|{dr['langid']['lang']}|{dr['cld2']['lang']}|{dr['detect_fast']['precision']}|{dr['langid']['precision']}|{dr['cld2']['precision']}\n")
     with open(f'logs/{seg_number}_accuracy.log', 'w', encoding='utf-8') as f: 
         f.write("amount of different prediction than the other two language models\n")
         f.write(f"{accuracy['detect_fast']['wrong'] * 100/accuracy['size']}% {accuracy['langid']['wrong'] * 100 / accuracy['size']}% {accuracy['cld2']['wrong']* 100 / accuracy['size']}%\n")
