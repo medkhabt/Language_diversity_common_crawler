@@ -11,6 +11,6 @@ libs
 .DS_Store
 graphs/dat/*
 graphs/images/*
-logs/
+logs/*
 tmp_token
 *nohup*
