@@ -1,0 +1,15 @@
+**.swp
+__pycache__
+**.
+**.tmp
+**.log
+**.swo
+.DS_Store
+graphs/dat/*
+graphs/images/*
+logs/
+*nohup*
+reports/
+test*
+pcs.sh
+*note*
