@@ -11,3 +11,5 @@ logs/
 *nohup*
 reports/
 test*
+pcs.sh
+*note*
