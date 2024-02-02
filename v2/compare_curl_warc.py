@@ -13,7 +13,6 @@ import pycld2 as cld2
 
 #Util in Traitement
 from bs4 import BeautifulSoup
-import regex 
 import io
 from os import path
 import requests
@@ -21,25 +20,35 @@ import sys
 import json
 # not used yet.
 import time
+import argparse
 
+#LOCAL
 import util
 
 def main(): 
-    if len(sys.argv) > 1: 
-        perf_calc = 1 if sys.argv[1] == '1' else 0;
-    else: 
-        perf_calc = 0 
-    if len(sys.argv) > 2 and len(sys.argv[2]) == 5 : 
-        seg_number = sys.argv[2]
-    else: 
-        seg_number = '00000'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number} ]")
+    supported_lang_id_md = ['detect_fast','langid','cld2']
+    parser = argparse.ArgumentParser(description='description about something') 
+    parser.add_argument("--perf", help="calculate the time execution", action="store_true")
+    parser.add_argument("--segement", "-s", help="warc segement to be treated", default="00000")
+    parser.add_argument("--language_identifier", "-l", help="specify the language identification model, for now there are 3 that are supported ['detect_fast','langid','cld2']", default="detect_fast")  
+    parser.add_argument("--number_records", "-n", type=int, help="the number of warc records that we are going to check", default=-1) 
+
+    args = parser.parse_args()
+    perf_calc = True if args.perf else False ; 
+    seg_number = args.segement
+    size = args.number_records
+    lang_id_model = args.language_identifier;
+    if(lang_id_model not in supported_lang_id_md): 
+        print("you chose an unsupported language identification model") 
+        print("We are defaulting to 'detect_fast'")
+        lang_id_model = 'detect_fast'
+    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size} ]")
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
-        save_cc(res, perf=perf_calc, seg_number = seg_number)
+        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size)
     else :
         print("Failed")
 def decode(record, charset): 
@@ -69,7 +78,7 @@ def decode(record, charset):
         else: 
             return 1;
 	
-def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=1000000):
+def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000):
     dataset = [] 
     counter = 0;
     enc_pr_ctr = 0;
@@ -79,7 +88,7 @@ def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=1000000):
     for record in ArchiveIterator(res_bytesio):
         if counter < offset : 
             continue; 
-        if counter >= size :
+        if size >= 0 and counter >= size :
             break;
         if record.http_charset == None or  record.http_charset == 'utf-7': 
             charset = 'utf-8'
@@ -94,9 +103,10 @@ def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=1000000):
             continue;
 # TODO don't really need the else
         else: 
-            fill_dataset(dataset, record, res)
+            fill_dataset(dataset, record, res, language_identification_model)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
         counter = counter + 1
+        print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
 # For the second try we just break and ignore that link
     res_bytesio.close()
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
@@ -111,7 +121,7 @@ def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=1000000):
 
 
 
-def fill_dataset(dataset, record, content):
+def fill_dataset(dataset, record, content, language_identification_model):
 ####### WARC PART
     # META LANGUAGE INFO  
     res = {'warc' : {}, 'curl': {}} 
@@ -119,9 +129,7 @@ def fill_dataset(dataset, record, content):
     # HTTP LANGUAGE HEADER 
 #TODO change the way to get the langugae header so we can refactor this part when curling .
     http_language_header = util.get_http_language_header_warc(record); 
-    language_identification_models = ['detect_fast'] 
-    for lang_id_mdl in language_identification_models: 
-        lg_id_warc = util.language_identification(util.boilerplate_removal(content), lang_id_mdl) 
+    lg_id_warc = util.language_identification(util.boilerplate_removal(content), language_identification_model) 
     res['warc'] =  {
 	    'uri' : record.headers.get('WARC-Target-URI'),
 	    'id' : record.headers.get('WARC-Record-ID'),
@@ -146,8 +154,7 @@ def fill_dataset(dataset, record, content):
         return 1; 
     content = r.text
     http_content_header = util.get_http_language_header_curl(r)
-    for lang_id_mdl in language_identification_models: 
-        lg_id_curl = util.language_identification(util.boilerplate_removal(content), lang_id_mdl) 
+    lg_id_curl = util.language_identification(util.boilerplate_removal(content), language_identification_model) 
     res['curl'] = {
          'http_header': headers["Accept-Language"] if headers["Accept-Language"] is not None else '-',
          'http_content_header' : http_content_header if http_content_header is not None else '-' , 

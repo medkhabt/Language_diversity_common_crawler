@@ -6,6 +6,7 @@ import pycld2 as cld2
 from resiliparse.extract.html2text import extract_plain_text
 from bs4 import BeautifulSoup
 import re
+import regex
 
 def get_meta_language(content):
     try: 
