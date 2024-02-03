@@ -25,6 +25,9 @@ import argparse
 #LOCAL
 import util
 
+#PROFILING
+import cProfile
+
 def main(): 
     supported_lang_id_md = ['detect_fast','langid','cld2']
     parser = argparse.ArgumentParser(description='description about something') 
@@ -32,26 +35,29 @@ def main():
     parser.add_argument("--segement", "-s", help="warc segement to be treated", default="00000")
     parser.add_argument("--language_identifier", "-l", help="specify the language identification model, for now there are 3 that are supported ['detect_fast','langid','cld2']", default="detect_fast")  
     parser.add_argument("--number_records", "-n", type=int, help="the number of warc records that we are going to check", default=-1) 
+    parser.add_argument("--timeout", "-t", type=float, help="the duration limit before the timeout", default=0.3) 
 
     args = parser.parse_args()
     perf_calc = True if args.perf else False ; 
     seg_number = args.segement
     size = args.number_records
     lang_id_model = args.language_identifier;
+    timeout = args.timeout;
     if(lang_id_model not in supported_lang_id_md): 
         print("you chose an unsupported language identification model") 
         print("We are defaulting to 'detect_fast'")
         lang_id_model = 'detect_fast'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size} ]")
+    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}]")
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
-        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size)
+        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout)
     else :
         print("Failed")
-def decode(record, charset): 
+def decode(record, charset: str): 
+    """ Decoding the content of the record 'Strategy'"""
     default_encoding = 'iso-8859-1';
     try:
         record_content = record.reader.read().decode(charset)
@@ -60,7 +66,6 @@ def decode(record, charset):
         return record_content;
     except UnicodeDecodeError :
         if charset == default_encoding:
-#	    we need to skip the url
             return 1;
         elif charset == 'utf-8' or charset == None or  record.http_charset == 'utf-7': 
             return decode(record, default_encoding); 
@@ -78,9 +83,28 @@ def decode(record, charset):
         else: 
             return 1;
 	
-def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000):
+     
+def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1):
+    """
+    Process the record list and transform to some log files.
+
+    Gets the response of the downloaded segement content, delegate the information retrieval to fill_dataset and save the information in log files. 
+
+    Parameters
+    ----------
+    res: requests.Response 
+        We are going to use the Byte content of the response object that we got from the url fo the segement. 
+    language_identification_model: str @TODO maybe we should use enums
+        The language identification model that will be used to identify the language of the content of the page. 
+    seg_number: str
+        Segement number of the downloaded content, used to name the log files.  
+    perf: 
+    """
     dataset = [] 
     counter = 0;
+    counters = {"timeout_err_ct" : 0, 
+		"http_err_ct" : 0,
+		"conn_err_ct" : 0}
     enc_pr_ctr = 0;
     res_bytesio = io.BytesIO(res.content)
     res_stream = GZipStream(res_bytesio)
@@ -103,13 +127,14 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
             continue;
 # TODO don't really need the else
         else: 
-            fill_dataset(dataset, record, res, language_identification_model)
+            fill_dataset(dataset, record, res, language_identification_model, counters, timeout)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
         counter = counter + 1
         print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
 # For the second try we just break and ignore that link
     res_bytesio.close()
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
+    print(f"timeout_err_ct : {counters['timeout_err_ct']}, http_err_ct: {counters['http_err_ct']}, conn_err_ct: {counters['conn_err_ct']}")
 #TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
 
     with open(f'logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
@@ -121,7 +146,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
 
 
 
-def fill_dataset(dataset, record, content, language_identification_model):
+def fill_dataset(dataset, record, content, language_identification_model, counters, timeout):
 ####### WARC PART
     # META LANGUAGE INFO  
     res = {'warc' : {}, 'curl': {}} 
@@ -148,7 +173,16 @@ def fill_dataset(dataset, record, content, language_identification_model):
     try: 
 #        headers = {"Accept-Language": "en-US, en; q=0.5"}
         headers = {"Accept-Language": None}
-        r = requests.get(res['warc']['uri'], headers=headers)
+        r = requests.get(res['warc']['uri'], headers=headers, timeout=timeout)
+    except requests.exceptions.ConnectTimeout as e: 
+        counters['timeout_err_ct'] = counters['timeout_err_ct'] + 1
+        return 1 
+    except requests.exceptions.HTTPError as e: 
+        counters['http_err_ct'] = counters['http_err_ct'] + 1
+        return 1 
+    except requests.exceptions.ConnectionError as e: 
+        counters['conn_err_ct'] = counters['conn_err_ct'] + 1
+        return 1 
     except Exception as e: 
 #        print(e)
         return 1; 
@@ -168,5 +202,5 @@ def fill_dataset(dataset, record, content, language_identification_model):
 
 
     dataset.append(res)
-
 main()
+#cProfile.run('main()')
