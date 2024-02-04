@@ -38,6 +38,7 @@ def main():
     parser.add_argument("--number_records", "-n", type=int, help="the number of warc records that we are going to check", default=-1) 
     parser.add_argument("--timeout", "-t", type=float, help="the duration limit before the timeout", default=0.3) 
     parser.add_argument("--workers", "-w", type=int, help="The number of max number of workers in the thread pool.", default=100)
+    parser.add_argument("--verbose", "-v", help="verbose mode", action="store_true")
 
     args = parser.parse_args()
     perf_calc = True if args.perf else False ; 
@@ -46,17 +47,18 @@ def main():
     lang_id_model = args.language_identifier;
     timeout = args.timeout;
     n_workers= args.workers;
+    verbose = args.verbose
     if(lang_id_model not in supported_lang_id_md): 
         print("you chose an unsupported language identification model") 
         print("We are defaulting to 'detect_fast'")
         lang_id_model = 'detect_fast'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}, number of workers: {n_workers}]")
+    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}, number of workers: {n_workers}, verbose: {verbose}]")
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
-        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout, n_workers=n_workers)
+        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout, n_workers=n_workers, verbose=verbose)
     else :
         print("Failed")
 def decode(record, charset: str): 
@@ -87,7 +89,7 @@ def decode(record, charset: str):
             return 1;
 	
      
-def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1, n_workers=100):
+def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1, n_workers=100, verbose=False):
     """
     Process the record list and transform to some log files.
 
@@ -133,17 +135,24 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
 # TODO don't really need the else
             else: 
                 future_urls.append(executor.submit(fill_dataset, record, res, language_identification_model, counters, timeout))
-            for future in concurrent.futures.as_completed(future_urls):
-                try:
-                    data = future.result();
-                    if(data != 1) : 
-                        dataset.append(data)
-                except Exception as e: 
-                    print("future exception: {e}")
+            counter = counter + 1
+            if(verbose): 
+                print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
+        print("inside future loop")
+        future_ctr = 0
+        future_succ_ctr = 0
+        for future in concurrent.futures.as_completed(future_urls):
+            try:
+                future_ctr = future_ctr + 1
+                data = future.result();
+                if(data != 1) : 
+                    future_succ_ctr =  future_succ_ctr + 1
+                    dataset.append(data)
+            except Exception as e: 
+                print(f"future exception: {e}")
+        print(f"futre counter {future_ctr}, future succes counter {future_succ_ctr}")
 #                fill_dataset(dataset, record, res, language_identification_model, counters, timeout)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
-            counter = counter + 1
-            print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
 # For the second try we just break and ignore that link
     res_bytesio.close()
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
@@ -153,9 +162,9 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
     with open(f'logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
 # Found a problem with the max caraters allowed in a single line, the process get killed.
 #        json.dump(dataset, f, ensure_ascii = False, indent=2)
-        f.write(f"meta_warc|http_header_warc|lang_warc|meta_curl|http_header_curl|lang_curl\n")
+        f.write(f"meta_warc|http_header_warc|lang_warc|meta_curl|http_header_curl|lang_curl|redirect|uri\n")
         for dr in dataset  :
-            f.write(f"{dr['warc']['meta']}|{dr['warc']['http_header']}|{dr['warc']['lang']['lang']}|{dr['curl']['meta']}|{dr['curl']['http_header']}|{dr['curl']['lang']['lang']}\n")
+            f.write(f"{dr['warc']['meta']}|{dr['warc']['http_header']}|{dr['warc']['lang']['lang']}|{dr['curl']['meta']}|{dr['curl']['http_header']}|{dr['curl']['lang']['lang']}|{dr['redirect']}|{dr['warc']['uri']}\n")
 
 
 
@@ -199,6 +208,11 @@ def fill_dataset(record, content, language_identification_model, counters, timeo
     except Exception as e: 
 #        print(e)
         return 1; 
+    print(f"the history of the request r is {r.history}")
+    if r.history:  
+        res['redirect'] = True 
+    else: 
+        res['redirect'] = False 
     content = r.text
     http_content_header = util.get_http_language_header_curl(r)
     lg_id_curl = util.language_identification(util.boilerplate_removal(content), language_identification_model) 
