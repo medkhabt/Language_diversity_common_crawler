@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 import io
 from os import path
 import requests
+import concurrent.futures
 import sys
 import json
 # not used yet.
@@ -36,6 +37,7 @@ def main():
     parser.add_argument("--language_identifier", "-l", help="specify the language identification model, for now there are 3 that are supported ['detect_fast','langid','cld2']", default="detect_fast")  
     parser.add_argument("--number_records", "-n", type=int, help="the number of warc records that we are going to check", default=-1) 
     parser.add_argument("--timeout", "-t", type=float, help="the duration limit before the timeout", default=0.3) 
+    parser.add_argument("--workers", "-w", type=int, help="The number of max number of workers in the thread pool.", default=100)
 
     args = parser.parse_args()
     perf_calc = True if args.perf else False ; 
@@ -43,17 +45,18 @@ def main():
     size = args.number_records
     lang_id_model = args.language_identifier;
     timeout = args.timeout;
+    n_workers= args.workers;
     if(lang_id_model not in supported_lang_id_md): 
         print("you chose an unsupported language identification model") 
         print("We are defaulting to 'detect_fast'")
         lang_id_model = 'detect_fast'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}]")
+    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}, number of workers: {n_workers}]")
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
-        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout)
+        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout, n_workers=n_workers)
     else :
         print("Failed")
 def decode(record, charset: str): 
@@ -84,7 +87,7 @@ def decode(record, charset: str):
             return 1;
 	
      
-def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1):
+def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1, n_workers=100):
     """
     Process the record list and transform to some log files.
 
@@ -98,11 +101,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
         The language identification model that will be used to identify the language of the content of the page. 
     seg_number: str
         Segement number of the downloaded content, used to name the log files.  
-    perf: int
-        If it's 1 then it is enabeled, so for each language identification, the script will calculate the time needed for 100 repeats of that execution as microbench are not reliable. 
-    offset (not used) @TODO remove this arg
-    size: int 
-        It represent the number of records that we are traiting for the specified segment.
+    perf: 
     """
     dataset = [] 
     counter = 0;
@@ -113,28 +112,38 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
     res_bytesio = io.BytesIO(res.content)
     res_stream = GZipStream(res_bytesio)
     dataset = []
-    for record in ArchiveIterator(res_bytesio):
-        if counter < offset : 
-            continue; 
-        if size >= 0 and counter >= size :
-            break;
-        if record.http_charset == None or  record.http_charset == 'utf-7': 
-            charset = 'utf-8'
+    with concurrent.futures.ThreadPoolExecutor(max_workers=150) as executor:
+        future_urls = [] 
+        for record in ArchiveIterator(res_bytesio):
+            if counter < offset : 
+                continue; 
+            if size >= 0 and counter >= size :
+                break;
+            if record.http_charset == None or  record.http_charset == 'utf-7': 
+                charset = 'utf-8'
                 #print(f'default to utf-8')
-        else:
-            charset = record.http_charset
+            else:
+                charset = record.http_charset
                 #print(f'we have a charset info which is {charset}')                   
-        res = decode(record, charset)
-        if res == 1 : 
+            res = decode(record, charset)
+            if res == 1 : 
 # TODO Probably add a log to the urls that couldn't get decoded.
-            enc_pr_ctr = enc_pr_ctr + 1;
-            continue;
+                enc_pr_ctr = enc_pr_ctr + 1;
+                continue;
 # TODO don't really need the else
-        else: 
-            fill_dataset(dataset, record, res, language_identification_model, counters, timeout)
+            else: 
+                future_urls.append(executor.submit(fill_dataset, record, res, language_identification_model, counters, timeout))
+            for future in concurrent.futures.as_completed(future_urls):
+                try:
+                    data = future.result();
+                    if(data != 1) : 
+                        dataset.append(data)
+                except Exception as e: 
+                    print("future exception: {e}")
+#                fill_dataset(dataset, record, res, language_identification_model, counters, timeout)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
-        counter = counter + 1
-        print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
+            counter = counter + 1
+            print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
 # For the second try we just break and ignore that link
     res_bytesio.close()
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
@@ -150,7 +159,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
 
 
 
-def fill_dataset(dataset, record, content, language_identification_model, counters, timeout):
+def fill_dataset(record, content, language_identification_model, counters, timeout):
 ####### WARC PART
     # META LANGUAGE INFO  
     res = {'warc' : {}, 'curl': {}} 
@@ -205,6 +214,5 @@ def fill_dataset(dataset, record, content, language_identification_model, counte
 ## detect_fast uses unknown instead of un.
 
 
-    dataset.append(res)
+    return res
 main()
-#cProfile.run('main()')
