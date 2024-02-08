@@ -27,6 +27,7 @@ def get_http_language_header_warc(record):
     http_language_header = record.http_headers.get('Accept-Language') if record.http_headers is not None else None
     http_language_header = http_language_header.split(",")[0] if http_language_header is not None else None
     return http_language_header 
+
 def get_http_language_header_curl(response):
     try:
         #print(str(response.headers))
@@ -37,6 +38,17 @@ def get_http_language_header_curl(response):
     except KeyError as e :
         #print(f"get_http_language_header_curl error: {e} ")
         return None 
+def get_http_vary_header_curl(response): 
+    try: 
+        return response.headers['Vary']
+    except KeyError as e: 
+        return None
+
+def get_http_headers_curl(response):
+    return { 
+       "language": get_http_language_header_curl(response), 
+       "vary" :  get_http_vary_header_curl(response)
+    }
 def boilerplate_removal(content): 
     return extract_plain_text(content, main_content=True); 
 def language_identification(content, language_model, perf_dic={'perf':0}):
