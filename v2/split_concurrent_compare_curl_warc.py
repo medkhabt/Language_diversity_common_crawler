@@ -17,14 +17,19 @@ import io
 from os import path
 import requests
 import concurrent.futures
+from concurrent.futures import wait 
+from concurrent.futures import as_completed 
 import sys
 import json
 # not used yet.
 import time
 import argparse
+import tracemalloc
+import gc
 
 #LOCAL
 import util
+import mem_usage_profiling as mem_pr
 
 #PROFILING
 import cProfile
@@ -110,8 +115,18 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
         Segement number of the downloaded content, used to name the log files.  
     perf: 
     """
-    dataset = [] 
+    tracemalloc.start()
+
+
+
     counter = 0;
+    batch_counter = 0; 
+    future_ctr = 0
+    future_succ_ctr = 0
+# From test in school machine, i found out that the process get killed if it is more than 400000.
+    max_batch_num = 4000;
+    batch_number = 0 ;
+    #max_batch_num = 350;
     counters = {"timeout_err_ct" : 0, 
 		"http_err_ct" : 0,
 		"conn_err_ct" : 0, 
@@ -124,6 +139,8 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
     with concurrent.futures.ThreadPoolExecutor(max_workers=n_workers) as executor:
         future_urls = [] 
         for record in ArchiveIterator(res_bytesio):
+            if batch_counter == 0: 
+                dataset = [] 
             if counter < offset : 
                 continue; 
             if size >= 0 and counter >= size :
@@ -142,21 +159,42 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
 # TODO don't really need the else
             else: 
                 future_urls.append(executor.submit(fill_dataset, record, res, language_identification_model, counters, timeout, lang_hd, verbose))
+                batch_counter = batch_counter + 1
             counter = counter + 1
-            if(verbose): 
-                print(f"--record traited count : {counter} out of {'max' if size < 0 else size}")
-        print("inside future loop")
-        future_ctr = 0
-        future_succ_ctr = 0
-        for future in concurrent.futures.as_completed(future_urls):
-            try:
-                future_ctr = future_ctr + 1
-                data = future.result();
-                if(data != 1) : 
-                    future_succ_ctr =  future_succ_ctr + 1
-                    dataset.append(data)
-            except Exception as e: 
-                print(f"future exception: {e}")
+#            print(f" size is {size} and counter is {counter}")
+            #if(verbose):
+               # print(f" batch counter {batch_counter} and max_batch_num is {max_batch_num}")
+            
+            if(batch_counter >= max_batch_num or (counter >= size and size > 0)):
+                print(f"inside the wait condition with batch_counter {batch_counter}, max_batch_num {max_batch_num}, counter {counter} and size {size}")
+                batch_counter = 0
+                batch_number = batch_number + 1; 
+                done = as_completed(future_urls)
+                for future in done:
+                    try:
+                        future_ctr = future_ctr + 1
+                        data = future.result();
+                        if(data != 1) : 
+                            future_succ_ctr =  future_succ_ctr + 1
+                            dataset.append(data)
+                    except Exception as e: 
+                        print(f"future exception: {e}")
+                future_urls = [] 
+                # save in file
+                with open(f'logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
+# Found a problem with the max caraters allowed in a single line, the process get killed.
+#        json.dump(dataset, f, ensure_ascii = False, indent=2)
+                    if batch_number == 1: 
+                        f.write(f"meta_warc|http_header_warc|lang_warc|meta_curl|http_header_curl|lang_curl|redirect|uri\n")
+                    for dr in dataset  :
+                        f.write(f"{dr['warc']['meta']}|{dr['warc']['http_header']}|{dr['warc']['lang']['lang']}|{dr['curl']['meta']}|{dr['curl']['http_header']}|{dr['curl']['lang']['lang']}|{dr['redirect']}|{dr['warc']['uri']}|{dr['curl']['http_content_header']['vary']}\n")
+                if(verbose):
+                    print(f"-- batched number {batch_number} ended . record traited count : {counter} out of {'max' if size < 0 else size}")
+               # if(verbose): 
+                snapshot = tracemalloc.take_snapshot()
+                mem_pr.display_top(snapshot)
+                #gc.collect()
+                del dataset
         print(f"futre counter {future_ctr}, future succes counter {future_succ_ctr}")
 #                fill_dataset(dataset, record, res, language_identification_model, counters, timeout)
                         #    print(f'*********\n header items are : {record.http_headers.items()}')
@@ -165,15 +203,6 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
     print(f' We had {enc_pr_ctr} enconding instance problem out of {counter}') 
     print(f"timeout_err_ct : {counters['timeout_err_ct']}, http_err_ct: {counters['http_err_ct']}, conn_err_ct: {counters['conn_err_ct']}")
 #TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
-
-    with open(f'logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
-# Found a problem with the max caraters allowed in a single line, the process get killed.
-#        json.dump(dataset, f, ensure_ascii = False, indent=2)
-        f.write(f"meta_warc|http_header_warc|lang_warc|meta_curl|http_header_curl|lang_curl|redirect|uri\n")
-        for dr in dataset  :
-            f.write(f"{dr['warc']['meta']}|{dr['warc']['http_header']}|{dr['warc']['lang']['lang']}|{dr['curl']['meta']}|{dr['curl']['http_header']}|{dr['curl']['lang']['lang']}|{dr['redirect']}|{dr['warc']['uri']}|{dr['curl']['http_content_header']['vary']}\n")
-
-
 
 def fill_dataset(record, content, language_identification_model, counters, timeout, lang_hd, verbose):
 ####### WARC PART
@@ -217,8 +246,6 @@ def fill_dataset(record, content, language_identification_model, counters, timeo
 #        print(e)
         counters['general_err_ct'] = counters['general_err_ct'] + 1
         return 1; 
-    if(verbose): 
-        print(f"the history of the request r is {r.history}")
     if r.history:  
         res['redirect'] = True 
     else: 
