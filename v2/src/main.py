@@ -5,9 +5,7 @@ from fastwarc.stream_io import GZipStream
 import requests
 import sys
 import io
-# not used yet.
-
-
+import configparser
 
 from handlers.decoding_handler import DecodingHandler 
 from handlers.boiler_plate_handler import BoilerPlateHandler 
@@ -51,47 +49,48 @@ class CompareLanguageIdentificationModelsPipeline:
         self._start.handle(request)
 def pre_traitement_seg_data(res): 
     return GZipStream(io.BytesIO(res.content))
-
+def config(): 
+    configs = {}
+    supported_languages = ['detect_fast', 'langid', 'cld2'] 
+    config = configparser.ConfigParser()
+    config.read('default.ini')
+    for key in config['MAIN'] :
+        configs[key] = config['MAIN'][key]
+    languages = []
+    for key in config['LANGUAGES']: 
+        languages.append(key)
+    configs['languages'] = languages
+    logging.info(f" the configs are {configs}")
+    return configs; 
 if __name__ == "__main__" : 
     #logging.getLogger().setLevel(logging.INFO)
 # pre-traitement and initialization before the execution of the pipleline. 
 
-    if len(sys.argv) > 1: 
-        perf_calc = 1 if sys.argv[1] == '1' else 0;
-    else: 
-        perf_calc = 0 
-    if len(sys.argv) > 2 and len(sys.argv[2]) == 5 : 
-        seg_number = sys.argv[2]
-    else: 
-        seg_number = '00000'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number} ]")
-    warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
+    configs = config()
+    perf_calc = int(configs['perf'])
+    warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{configs["segment"]}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
     counter = 0;
     enc_pr_ctr = 0;
     dataset = []
-    size = 100000 
-    #accuracy = {'size': 0, 'match' : 0, 'detect_fast' : {'wrong' : 0 , 'uniq' : 0}, 'langid' : {'wrong' : 0 , 'uniq' : 0}, 'cld2' : {'wrong' : 0 , 'uniq' : 0}}
-    #unknowns_dic = {'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
+    size = int(configs['size'])
 
-# TODO this also shoudl be a param
-    language_identification_models = ['detect_fast', 'langid', 'cld2'] 
+    language_identification_models = configs['languages'] 
     compare_lang_pipe = CompareLanguageIdentificationModelsPipeline()
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
         for record in ArchiveIterator(pre_traitement_seg_data(res)):
-            if counter >= size :
+            if size >=0 and counter >= size :
                 break;
-            compare_lang_pipe.run(seg_number, record, language_identification_models, perf_calc)
+            compare_lang_pipe.run(configs["segment"], record, language_identification_models, perf_calc)
             counter += 1
-        compare_lang_pipe.end(seg_number);
+        compare_lang_pipe.end(configs["segment"]);
     
 # TODO Probably add a log to the urls that couldn't get decoded.
 # TODO don't really need the else
     else :
         print("Failed")
 
-## it is going to contain the argument extraction part. 
 
 
