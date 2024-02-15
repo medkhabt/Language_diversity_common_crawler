@@ -33,6 +33,8 @@ class RepoHandler(AbstractHandler):
             logging.info(f"inside the can save bloc with {self.get_number_instances_traited()}")
             # Should change the end=self._force_save if there are other things that might force the save.
             self._repo.save(request['seg_number'], self._requests, self._stats, self._instances_counter , self._first_save, end=self._force_save)   
+            if(self._first_save): 
+                self._first_save = False
             self._requests = [] 
         return super().handle(request);
  #       else: 
