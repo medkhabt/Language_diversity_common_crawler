@@ -23,9 +23,8 @@ class AbstractHandler(Handler):
 
     @abstractmethod
     def handle(self, request:Any) -> Optional[Any] : 
-        if self.next_handler: 
-            self_instances_counter = self_instances_counter + 1
+        if self._next_handler: 
             return self._next_handler.handle(request)
         return None
     def get_number_instances_traited(self): 
-        return _instances_counter;
+        return self._instances_counter;

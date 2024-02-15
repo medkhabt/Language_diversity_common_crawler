@@ -1,3 +1,4 @@
+import logging
 #WARC Extraction
 from fastwarc.warc import ArchiveIterator 
 from fastwarc.stream_io import GZipStream
@@ -15,30 +16,41 @@ from handlers.language_identification_handler import LanguageIdentificationHandl
 from handlers.stats_handler import StatsHandler 
 from handlers.repo_handler import RepoHandler 
 
-
-#def save_cc(res, seg_number='00000', perf=0 ,offset=0, size=100000):
-def compare_language_identification_models_pipeline(record, language_models) : 
 # Create instances of the necessary handlers for our pipeline.
 # decode => boilerplate => extraction => language_identificaiton => stats => repo.
-    decoding = DecodingHandler(); 
-    boilerplate = BoilerPlateHandler(); 
-    extraction = ExtractionHandler(); 
-    language_identification = LanguageIdentificationHandler(); 
-    stats = StatsHandler(); 
-    repo = RepoHandler(100); 
-    
+class CompareLanguageIdentificationModelsPipeline:
+    def __init__(self):
+        self._decoding = DecodingHandler() #if(self._decoding == None); 
+        self._boilerplate = BoilerPlateHandler() #if(self._boilerplate == None); 
+        self._extraction = ExtractionHandler() #if(self._extraction== None); 
+        self._language_identification = LanguageIdentificationHandler() #if(self._language_identification == None); 
+        self._stats = StatsHandler() #if(self._stats== None); 
+        self._repo = RepoHandler(100) #if(self._repo== None); 
+        
+        self.start(self._decoding)
+        self._clean = False;
+        self._decoding.set_next(self._boilerplate).set_next(self._extraction).set_next(self._language_identification).set_next(self._stats).set_next(self._repo)
+    def run(self, seg_number:str, record, language_models, perf=0):
+        perf_dict = {'perf' : perf, 'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
 
-    decoding.set_next(boilerplate).set_next(extraction).set_next(language_identification).set_next(stats).set_next(repo)
-    request = {
-	'record' : record, 
-        'language_models': language_models 
-}
-    decoding.handle(request)
+        request = {
+            'seg_number' : seg_number,
+	    'record' : record, 
+	    'language_models': language_models, 
+	    'perf_dic' : perf_dict
+        }
+        self._start.handle(request)
+        if (not self._clean): 
+            self._repo.clean(request['seg_number']); 
+            self._clean = True
+    def start(self, start_handler): 
+        self._start = start_handler
+
 def pre_traitement_seg_data(res): 
     return GZipStream(io.BytesIO(res.content))
 
 if __name__ == "__main__" : 
-
+    #logging.getLogger().setLevel(logging.INFO)
 # pre-traitement and initialization before the execution of the pipleline. 
 
     if len(sys.argv) > 1: 
@@ -59,21 +71,19 @@ if __name__ == "__main__" :
     size = 1000
     #accuracy = {'size': 0, 'match' : 0, 'detect_fast' : {'wrong' : 0 , 'uniq' : 0}, 'langid' : {'wrong' : 0 , 'uniq' : 0}, 'cld2' : {'wrong' : 0 , 'uniq' : 0}}
     #unknowns_dic = {'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
-    perf_dict = {'perf' : perf_calc, 'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
 
 # TODO this also shoudl be a param
     language_identification_models = ['detect_fast', 'langid', 'cld2'] 
+    compare_lang_pipe = CompareLanguageIdentificationModelsPipeline()
     if res.status_code == 200: 
         print(f'Downloaded: {str(warc_url)}')
         for record in ArchiveIterator(pre_traitement_seg_data(res)):
             if counter >= size :
                 break;
-            compare_language_identification_models_pipeline(record, language_identification_models)
+            compare_lang_pipe.run(seg_number, record, language_identification_models, perf_calc)
+            counter += 1
 # TODO Probably add a log to the urls that couldn't get decoded.
 # TODO don't really need the else
-        fill_dataset(dataset, record, res,accuracy,unknowns_dic, perf_dict)
-
-        save_cc(res, perf=perf_calc, seg_number = seg_number)
     else :
         print("Failed")
 
