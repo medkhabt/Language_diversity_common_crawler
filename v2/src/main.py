@@ -39,13 +39,16 @@ class CompareLanguageIdentificationModelsPipeline:
 	    'language_models': language_models, 
 	    'perf_dic' : perf_dict
         }
-        self._start.handle(request)
         if (not self._clean): 
             self._repo.clean(request['seg_number']); 
             self._clean = True
+        self._start.handle(request)
     def start(self, start_handler): 
         self._start = start_handler
-
+    def end(self, seg_number: str): 
+        self._start = self._repo
+        request = {'seg_number' : seg_number, 'end' : True}
+        self._start.handle(request)
 def pre_traitement_seg_data(res): 
     return GZipStream(io.BytesIO(res.content))
 
@@ -68,7 +71,7 @@ if __name__ == "__main__" :
     counter = 0;
     enc_pr_ctr = 0;
     dataset = []
-    size = 1000
+    size = 100000 
     #accuracy = {'size': 0, 'match' : 0, 'detect_fast' : {'wrong' : 0 , 'uniq' : 0}, 'langid' : {'wrong' : 0 , 'uniq' : 0}, 'cld2' : {'wrong' : 0 , 'uniq' : 0}}
     #unknowns_dic = {'detect_fast' : 0, 'langid' : 0, 'cld2' : 0}
 
@@ -82,6 +85,8 @@ if __name__ == "__main__" :
                 break;
             compare_lang_pipe.run(seg_number, record, language_identification_models, perf_calc)
             counter += 1
+        compare_lang_pipe.end(seg_number);
+    
 # TODO Probably add a log to the urls that couldn't get decoded.
 # TODO don't really need the else
     else :

@@ -10,3 +10,6 @@ class Base(ABC):
     @abstractmethod
     def counter_reset(self) -> None: 
         pass 
+    @abstractmethod
+    def format(self) -> str: 
+        pass 

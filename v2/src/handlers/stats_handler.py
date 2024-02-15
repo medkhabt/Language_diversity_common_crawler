@@ -13,6 +13,7 @@ class StatsHandler(AbstractHandler):
     } 
     def handle(self, request:Any) -> Optional[Any] :
         logging.info("handling the stats phase")
+        request['stats'] = {}
         if ('language_models' in request): 
            for lang in request['language_models']: 
                if (lang not in request): 
@@ -21,7 +22,7 @@ class StatsHandler(AbstractHandler):
                self.refresh_stats(request);
            for key in self._stats:
                self._stats[key]['instance'].generate(request, self._stats[key]['counter'])
-               request[key] = self._stats[key]['counter']   
+               request['stats'][key] = self._stats[key]
            return super().handle(request);
         else: 
             # TODO Refactor the handle of missing args for the handlers.

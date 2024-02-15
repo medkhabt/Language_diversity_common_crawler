@@ -6,3 +6,5 @@ class Unknown(Base) :
                 output_dict[lang] = output_dict[lang] + 1 
     def counter_reset(self) -> None: 
         return 0
+    def format(self, counter, size) ->str: 
+       return f"{counter['detect_fast']* 100 / size}% {counter['langid']* 100 / size}% {counter['cld2']* 100 / size}%\n"

@@ -21,3 +21,7 @@ class Accuracy(Base) :
 
     def counter_reset(self) -> None: 
         return {'uniq' : 0, 'wrong' : 0}
+    def format(self, counter, size) ->str: 
+        return f"amount of different prediction than the other two language models\n{counter['detect_fast']['wrong'] * 100/size}% {counter['langid']['wrong'] * 100 / size}% {counter['cld2']['wrong']* 100 / size}%\namount of prediction with unknown prediction in the other two models.\n{counter['detect_fast']['uniq']* 100 / size}% {counter['langid']['uniq']* 100 / size}% {counter['cld2']['uniq']* 100 / size}%\nthe number of perfect matches are: {counter['match']*100/size}%"
+
+
