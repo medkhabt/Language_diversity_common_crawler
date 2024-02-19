@@ -13,5 +13,6 @@ reports/
 test*
 pcs.sh
 *note*
-.bak
 old_logs/
+**.bak
+**profiling
