@@ -7,11 +7,12 @@ class RepoHandler(AbstractHandler):
 # TODO fix the case where we don't specify the umber of req trigger
     _requests : list = [] ;
     _n_req_trigger: int = -1 ;  
-    _first_save: bool = True;
+    _first_save: bool
     _repo = None; 
     _force_save = False;
     _stats: dict = {}
     def __init__(self, n = -1): 
+        self._first_save = True
         self.n_req_trigger = n  
         self._repo = FileRepository()
     def clean(self, seg_number:str) : 

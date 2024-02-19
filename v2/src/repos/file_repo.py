@@ -2,15 +2,15 @@ import os
 import logging
 class FileRepository: 
     def clean(self, seg_number:str) : 
-        os.system(f'rm logs/test_refactor{seg_number}.log');
+        os.system(f'rm logs/{seg_number}.log');
     def save(self, seg_number, requests, stats, size, first_save=False, end=False):
 	#TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
+        if(first_save): 
+            with open(f'logs/{seg_number}.log', 'w', encoding='utf-8') as f: 
+                f.write(f"meta|http_header|detectfast|langid|cld2|pre-detectfast|pre-langid|pre-cld2\n")
         with open(f'logs/{seg_number}.log', 'a', encoding='utf-8') as f: 
 	# Found a problem with the max caraters allowed in a single line, the process get killed.
     #        json.dump(dataset, f, ensure_ascii = False, indent=2)
-            logging.warning(f"first save is {first_save}")
-            if(first_save):
-                f.write(f"meta|http_header|detectfast|langid|cld2|pre-detectfast|pre-langid|pre-cld2\n")
             for dr in requests:
                 f.write(f"{dr['meta']}|{dr['http_header']}|{dr['detect_fast']['lang']}|{dr['langid']['lang']}|{dr['cld2']['lang']}|{dr['detect_fast']['precision']}|{dr['langid']['precision']}|{dr['cld2']['precision']}\n")
             if(end): 
