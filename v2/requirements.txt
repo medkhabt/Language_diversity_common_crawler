@@ -1,8 +1,0 @@
-fastwarc 
-requests
-resiliparse
-langid
-pycld2
-regex
-beautifulsoup4
-timeit

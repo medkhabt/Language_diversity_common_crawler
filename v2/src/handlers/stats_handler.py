@@ -3,13 +3,16 @@ from typing import Any, Optional
 from handlers.handler_basis import AbstractHandler
 from stats.accuracy import Accuracy 
 from stats.unknown import Unknown 
+from stats.performance import Performance 
+
 class StatsHandler(AbstractHandler): 
     _stat_init: bool = True ;   
     _stats: dict
     def __init__(self): 
         self._stats = {
 	    'accuracy' : {'counter' :  {'size':0, 'match':0} , 'instance' : Accuracy()},  
-            'unknown' : {'counter' : {},  'instance' :  Unknown()} 
+            'unknown' : {'counter' : {},  'instance' :  Unknown()} ,
+	    'performance' : {'counter' :{}, 'instance': Performance()}
     } 
     def handle(self, request:Any) -> Optional[Any] :
         logging.info("handling the stats phase")

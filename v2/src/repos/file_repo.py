@@ -2,7 +2,7 @@ import os
 import logging
 class FileRepository: 
     def clean(self, seg_number:str) : 
-        os.system(f'rm logs/{seg_number}.log');
+        os.system(f'rm logs/{seg_number}.log 2>/dev/null');
     def save(self, seg_number, requests, stats, size, first_save=False, end=False):
 	#TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
         if(first_save): 
