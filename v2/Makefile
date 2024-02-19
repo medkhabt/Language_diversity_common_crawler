@@ -15,9 +15,9 @@ log_all:
 	for i in $$(seq 0 ${num_segs}); do echo "executing script for seg : $$i\n"; seg="0000$$i"; corr_seg=$$(echo -n $$seg | tail -c 5) ;  sed -i.bak "s/\(Segment=\).*/\1$${corr_seg}/g" default.ini ; seg_tmp=$$(grep "Segment" default.ini | cut -d '=' -f 2); $(MAKE) all_one_seg; if [ $$i -eq 0 ] ; then cat logs/$${seg_tmp}.log > logs/${all_dats_file_name}.log ;else tail -n +2 logs/$${seg_tmp}.log >> logs/${all_dats_file_name}.log; fi ; done  
 
 .PHONY: all_one_seg 
-all_one_seg : graphs/images/${seg_name}/%.png
-
-graphs/images/${seg_name}/%.png &: graphs/dat/${seg_name}.dat
+all_one_seg : images_one_seg 
+.PHONY:images_one_seg
+images_one_seg:  graphs/dat/${seg_name}.dat
 	bash commands/fasrawc_generetate_graph_comparaison.sh ${seg_name} ${dem_name}
 graphs/dat/${seg_name}.dat: seg
 	mv ${seg_name}.dat graphs/dat
@@ -27,5 +27,8 @@ seg: logs/${seg_name}.log
 logs/${seg_name}.log: default.ini 
 	python3 src/main.py 
 
-     
-
+.PHONY: clean
+clean:     
+	rm logs/* 2>/dev/null
+	rm -r graphs/images/* 2>/dev/null
+	rm graphs/dat/* 2>/dev/null
