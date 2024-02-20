@@ -11,3 +11,14 @@ warc_temp.warc.gz
 tmp_token
 *nohup*
 planning_logs
+**.swp
+graphs/dat/*
+graphs/images/*
+logs/*
+*nohup*
+reports/
+test*
+*note*
+old_logs/
+**.bak
+**profiling
