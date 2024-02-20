@@ -23,9 +23,9 @@ graphs/dat/${seg_name}.dat: seg
 	mv ${seg_name}.dat graphs/dat
 .PHONY: seg 
 seg: logs/${seg_name}.log
-	bash commands/count_fastwarc_result.sh logs/${seg_name}.log ${seg_name} 
+	mkdir graphs/dat graphs/images 2>/dev/null & bash commands/count_fastwarc_result.sh logs/${seg_name}.log ${seg_name} 
 logs/${seg_name}.log: default.ini 
-	python3 src/main.py 
+	mkdir logs 2>/dev/null & python3 src/main.py 
 
 .PHONY: clean
 clean:     
