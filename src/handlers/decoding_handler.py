@@ -14,10 +14,10 @@ class DecodingHandler(AbstractHandler):
     _err_counter : int = 0 
     _decoder:Decoding = None
     def __init__(self): 
-       """ Construct the DecoderHandler by setting up the Decoding implementation"""
+        """ Construct the DecoderHandler by setting up the Decoding implementation"""
         self._decoder = Decoding();
     def handle(self, request:Any) -> Any : 
-       """ Handle the decoding response from the implementatoin, count the number of instances that had decoding failures  and check the if the necessary args are present.""" 
+        """ Handle the decoding response from the implementatoin, count the number of instances that had decoding failures  and check the if the necessary args are present.""" 
 
         logging.info("Handling the decoding of the request")
         if 'record' in request: 

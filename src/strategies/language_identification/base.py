@@ -1,4 +1,3 @@
-```python
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
@@ -17,4 +16,3 @@ class Base:
             Any: The result of the identification.
         """
         pass
-```

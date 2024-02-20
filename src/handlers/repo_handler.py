@@ -66,10 +66,10 @@ class RepoHandler(AbstractHandler):
             # TODO Refactor the handle of missing args for the handlers.
  #           raise Exception("Couldn't find one/some/all of the following keys ['language_models'] in the request dict") 
     def save_request(self, request): 
-    """ Store the request in the instance with its stats. """
+        """ Store the request in the instance with its stats. """
         self._requests.append(request) 
         self._stats = request['stats'] 
     def can_save(self): 
-    """ Check if the instance is in a state of saving the instance in the repo ressource."""
+        """ Check if the instance is in a state of saving the instance in the repo ressource."""
         return self._force_save or ( self.n_req_trigger >= 0 ) and ( len(self._requests) == self.n_req_trigger )  
 

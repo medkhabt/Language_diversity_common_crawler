@@ -2,10 +2,10 @@ import os
 import logging
 class FileRepository: 
     def clean(self, seg_number:str) : 
-    """Clean the log file associated for the seg_number"""
+        """Clean the log file associated for the seg_number"""
         os.system(f'rm logs/{seg_number}.log 2>/dev/null');
     def save(self, seg_number, requests, stats, size, first_save=False, end=False):
-    """
+        """
 	Save the requests in the right format in the associated files.
 
 	Parameters
@@ -22,7 +22,7 @@ class FileRepository:
 		Is it the first save in a file for the FileRepository instance	
 	end : bool 
 		Is it the last request to handle for the current pipeline.
-    """
+        """
 	#TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
         if(first_save): 
             with open(f'logs/{seg_number}.log', 'w', encoding='utf-8') as f: 

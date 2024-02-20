@@ -13,10 +13,10 @@ class ExtractionHandler(AbstractHandler):
     """ 
     _extraction:Extraction      
     def __init__(self):
-       """ Construct the ExtractionHandler by setting up the Extraction implementation"""
+        """ Construct the ExtractionHandler by setting up the Extraction implementation"""
         self._extraction = WarcExtraction()  
     def handle(self, request:Any) -> Optional[Any]: 
-       """ Fill the request with the information extraction based on the extraction implementation""" 
+        """ Fill the request with the information extraction based on the extraction implementation""" 
         logging.info("handling the extraction phase")
         if (('content' in request) and ('record' in request)): 
             request['meta'] = self._extraction.meta_extraction(request['content'])

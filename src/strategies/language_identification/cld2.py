@@ -1,4 +1,3 @@
-```python
 from strategies.language_identification.base import Base
 import pycld2 as cld2
 import regex
@@ -31,4 +30,3 @@ class CLD2(Base):
         except Exception as e:
             print(e)
             return 1
-```

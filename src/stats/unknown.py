@@ -1,4 +1,3 @@
-```python
 from stats.base import Base
 
 class Unknown(Base):
@@ -40,4 +39,3 @@ class Unknown(Base):
             str: Formatted language prediction counts that failed string.
         """
         return f"{counter['detect_fast']*100/size}% {counter['langid']*100/size}% {counter['cld2']*100/size}%\n"
-```

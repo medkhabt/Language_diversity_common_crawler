@@ -1,4 +1,3 @@
-```python
 from strategies.language_identification.base import Base
 from resiliparse.parse.lang import detect_fast as d
 import time
@@ -24,4 +23,3 @@ class DetectFast(Base):
             duration = time.process_time() - start
             perf_dic['detect_fast'] = duration
         return {'lang': d(content)[0], 'precision': d(content)[1]}
-```

@@ -22,7 +22,7 @@ class LanguageIdentificationHandler(AbstractHandler):
 	    'detect_fast' : DetectFast()
 	} 
     def handle(self, request:Any) -> Optional[Any]: 
-       """ 
+        """ 
 		- Identify the language of the content in the request with all the language identification models that re specified in _lang_identifier. 
 		- Run performance tests if specified.
 		- Post-trait the result of the langage identification for special cases.

@@ -1,4 +1,3 @@
-```python
 import logging
 from fastwarc.warc import ArchiveIterator
 from fastwarc.stream_io import GZipStream
@@ -104,4 +103,3 @@ if __name__ == "__main__":
 
     else:
         print("Failed")
-```
