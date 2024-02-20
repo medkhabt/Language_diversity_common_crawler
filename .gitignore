@@ -22,3 +22,4 @@ test*
 old_logs/
 **.bak
 **profiling
+old_grphs/

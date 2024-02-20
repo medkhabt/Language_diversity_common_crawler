@@ -1,9 +1,0 @@
-lang detectfast langid cld2 pre-detectfast pre-langid pre-cld2
-da 3 0 0 696 0 0
-en 5 5 4 920.4 -38.9222 772.75
-br 0 2 0 0 -4.39922 0
-mt 0 1 0 0 1.05598 0
-zh 0 1 0 0 -15688.7 0
-un 0 0 4 0 0 0
-zh-Hant 0 0 1 0 0 1893
-ko 1 0 0 536 0 0
