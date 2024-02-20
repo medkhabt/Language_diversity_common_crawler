@@ -6,15 +6,25 @@ from stats.unknown import Unknown
 from stats.performance import Performance 
 
 class StatsHandler(AbstractHandler): 
+    """ 
+    Attributes
+    ---------- 
+    _stat_init: bool 
+	is it the first time that the stathandler is traiting a request
+     _stats: dict 
+	contains all the stats that we are including in the pipeline and wit their implementations.
+    """ 
     _stat_init: bool = True ;   
     _stats: dict
     def __init__(self): 
+        """ Initiate the _stats with the implementations"""
         self._stats = {
 	    'accuracy' : {'counter' :  {'size':0, 'match':0} , 'instance' : Accuracy()},  
             'unknown' : {'counter' : {},  'instance' :  Unknown()} ,
 	    'performance' : {'counter' :{}, 'instance': Performance()}
     } 
     def handle(self, request:Any) -> Optional[Any] :
+        """Handle the stats"""
         logging.info("handling the stats phase")
         request['stats'] = {}
         if ('language_models' in request): 
@@ -32,6 +42,7 @@ class StatsHandler(AbstractHandler):
             raise Exception("Couldn't find one/some/all of the following keys ['language_models'] in the request dict") 
 
     def refresh_stats(self, request): 
+        """Initiate the stat holders properly"""
         self._stat_init = False; 
         for lang in request['language_models']:
             for key in self._stats: 

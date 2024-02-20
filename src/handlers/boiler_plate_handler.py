@@ -5,10 +5,18 @@ from strategies.boilerplate_removal.boilerplate_removal_resiliparse_html2text im
 from strategies.boilerplate_removal.boilerplate_removal import BoilerPlateRemoval 
 
 class BoilerPlateHandler(AbstractHandler): 
+    """ 
+    Attributes
+    ---------- 
+    _impl: strategies.boilerplate_removal.boilerplate_removal.BoilerPlateRemoval 
+    		The implementation of the BoilerplateRemoval technique.	
+    """ 
     _impl:BoilerPlateRemoval
     def __init__(self):
+       """ Construct the BoilerPlateHandler by setting up the boilerplate removal implementation"""
        self._impl = ResiliParseHtml2Text()
     def handle(self, request:Any) -> Optional[Any] :
+        """ Check if the necessary args exists before starting the boilerplate removal process."""
         logging.info("handling the boilerplate removal task")
         if 'content' in request: 
             request['content'] = self._impl.apply(request['content'])

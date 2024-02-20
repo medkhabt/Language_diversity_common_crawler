@@ -1,6 +1,19 @@
 from bs4 import BeautifulSoup
 class Extraction : 
     def meta_extraction(self, content):
+        """
+        Extract the language meta data from the html content  
+
+	Parameters 
+	----------
+	content : str
+		Html content 
+
+	Returns 
+	--------
+     	str | None 
+		the language meta data extracted from the content
+        """
         try: 
             soup = BeautifulSoup(content, 'html.parser')
             meta_language = None
