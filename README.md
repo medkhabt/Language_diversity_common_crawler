@@ -44,11 +44,11 @@ or you can specify `NumberOfSegs` to execute the script on multiple segements by
 
 
 ### The execution of the pipeline for a single segement results in : 
-command `make all_one_seg`
-	- logs/{SEGEMENT_NUMBER}.log  (containing the logs concerning the meta headers, http headers, and the language identifications) 
-        - logs/{SEGEMENT_NUMBER}_{STAT}.log (contains the logs about the stats that are implemented in stats/* and that are handled by the `handlers/stat_handler.py::StatHandler`
-        - graphs/dat/{SEGEMENT_NUMBER}.dat (contains how many times a langauge was identified by a language identification model)
-        - graphs/images/{SEGEMENT_NUMBER}/* (contains histograms to compare the number of language identification for each language. Scale is logarithmic. And the graph is split into multiple subgraphs depending on the number of languages that were detected, so we don't lose the lisibility of the data on the graphs).
+command `make all_one_seg`	
+- logs/{SEGEMENT_NUMBER}.log  (containing the logs concerning the meta headers, http headers, and the language identifications) 
+- logs/{SEGEMENT_NUMBER}_{STAT}.log (contains the logs about the stats that are implemented in stats/* and that are handled by the `handlers/stat_handler.py::StatHandler
+- graphs/dat/{SEGEMENT_NUMBER}.dat (contains how many times a langauge was identified by a language identification model)
+- graphs/images/{SEGEMENT_NUMBER}/* (contains histograms to compare the number of language identification for each language. Scale is logarithmic. And the graph is split into multiple subgraphs depending on the number of languages that were detected, so we don't lose the lisibility of the data on the graphs).
 
 ### The execution of the pipepline for multiple segements results in:  
 
@@ -61,7 +61,7 @@ each segement will have the same results as if we executed the pipeline just for
 
 
 ## Architecture : 
-
+```
 src
 ├── extractions ( the data that we extract from the page content ) 
 ├── handlers ( Chain of responsability DP, seemed usefull for this kind│    of use case)
@@ -72,3 +72,4 @@ src
     ├── decoding
     └── language_identification
 
+```
