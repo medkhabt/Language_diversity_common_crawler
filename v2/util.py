@@ -7,7 +7,16 @@ from resiliparse.extract.html2text import extract_plain_text
 from bs4 import BeautifulSoup
 import re
 import regex
+import meta_language
+import os
+import subprocess
 
+def get_meta_language_2(index, content):
+    with open(f".{index}.txt", "w") as text_file:
+        text_file.write(content)
+    result = subprocess.run(["python3", "meta_language.py", "-f", ".{index}.txt"], capture_output=True)
+    os.remove(f".{index}.txt")
+    return result
 def get_meta_language(content):
     try: 
         soup = BeautifulSoup(content, 'html.parser')

@@ -17,7 +17,6 @@ import io
 from os import path
 import requests
 import concurrent.futures
-from concurrent.futures import wait 
 from concurrent.futures import as_completed 
 import sys
 import json
@@ -30,6 +29,7 @@ import gc
 #LOCAL
 import util
 import mem_usage_profiling as mem_pr
+import tracemalloc
 
 #PROFILING
 import cProfile
@@ -181,7 +181,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
                         print(f"future exception: {e}")
                 future_urls = [] 
                 # save in file
-                with open(f'logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
+                with open(f'../logs/comp_{seg_number}.log', 'w', encoding='utf-8') as f: 
 # Found a problem with the max caraters allowed in a single line, the process get killed.
 #        json.dump(dataset, f, ensure_ascii = False, indent=2)
                     if batch_number == 1: 
@@ -191,8 +191,8 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
                 if(verbose):
                     print(f"-- batched number {batch_number} ended . record traited count : {counter} out of {'max' if size < 0 else size}")
                # if(verbose): 
-                snapshot = tracemalloc.take_snapshot()
-                mem_pr.display_top(snapshot)
+                #snapshot = tracemalloc.take_snapshot()
+                #mem_pr.display_top(snapshot)
                 #gc.collect()
                 del dataset
         print(f"futre counter {future_ctr}, future succes counter {future_succ_ctr}")
@@ -208,7 +208,9 @@ def fill_dataset(record, content, language_identification_model, counters, timeo
 ####### WARC PART
     # META LANGUAGE INFO  
     res = {'warc' : {}, 'curl': {}} 
-    meta_language = util.get_meta_language(content)
+    index = record.headers.get('WARC-Record-ID')
+    #meta_language = util.get_meta_language(content)
+    meta_language = util.get_meta_language_2(index,content)
     # HTTP LANGUAGE HEADER 
 #TODO change the way to get the langugae header so we can refactor this part when curling .
     http_language_header = util.get_http_language_header_warc(record); 
@@ -256,7 +258,7 @@ def fill_dataset(record, content, language_identification_model, counters, timeo
     res['curl'] = {
          'http_header': headers["Accept-Language"] if headers["Accept-Language"] is not None else '-',
          'http_content_header' : http_content_header if http_content_header is not None else '-' , 
-         'meta':  util.get_meta_language(content), 
+         'meta':  util.get_meta_language_2(index,content), 
          'lang':  {'lang':'un', 'precision' : 0} if lg_id_curl == 1 or lg_id_curl['lang'] == 'unknown' or len(lg_id_curl) > 2 else  lg_id_curl
  
     } 
