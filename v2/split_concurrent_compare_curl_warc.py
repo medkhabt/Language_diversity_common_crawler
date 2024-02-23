@@ -45,6 +45,7 @@ def main():
     parser.add_argument("--workers", "-w", type=int, help="The number of max number of workers in the thread pool.", default=100)
     parser.add_argument("--verbose", "-v", help="verbose mode", action="store_true")
     parser.add_argument("--lang_hd" , help="language-header", default=None )
+    parser.add_argument("--proxy" , help="proxy to use", default=None) 
 
     args = parser.parse_args()
     perf_calc = True if args.perf else False ; 
@@ -55,11 +56,12 @@ def main():
     n_workers= args.workers;
     verbose = args.verbose
     language_header = args.lang_hd; 
+    proxy = args.proxy;
     if(lang_id_model not in supported_lang_id_md): 
         print("you chose an unsupported language identification model") 
         print("We are defaulting to 'detect_fast'")
         lang_id_model = 'detect_fast'
-    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}, number of workers: {n_workers}, language-header: {language_header}, verbose: {verbose}]")
+    print(f"args are : [ perf_calc : {perf_calc} , seg_number = {seg_number}, language_identification model : {lang_id_model}, number of record = {size}  timeout: {timeout}, number of workers: {n_workers}, language-header: {language_header}, proxy: {proxy}, verbose: {verbose}]")
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{seg_number}.warc.gz'
     bundle = [];
     res = requests.get(warc_url); 
@@ -68,7 +70,7 @@ def main():
 # Maybe try to make multiple batches here so we won't have the mem problem.
 # 30 000 instance per save_cc works fine.
         
-        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout, n_workers=n_workers, lang_hd=language_header, verbose=verbose)
+        save_cc(res, lang_id_model, perf=perf_calc, seg_number = seg_number, size=size, timeout=timeout, n_workers=n_workers, lang_hd=language_header, proxy=proxy, verbose=verbose)
     else :
         print("Failed")
 def decode(record, charset: str): 
@@ -99,7 +101,7 @@ def decode(record, charset: str):
             return 1;
 	
      
-def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1, n_workers=100, lang_hd=None, verbose=False):
+def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offset=0, size=1000000, timeout=1, n_workers=100, lang_hd=None, proxy=None, verbose=False):
     """
     Process the record list and transform to some log files.
 
@@ -158,7 +160,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
                 continue;
 # TODO don't really need the else
             else: 
-                future_urls.append(executor.submit(fill_dataset, record, res, language_identification_model, counters, timeout, lang_hd, verbose))
+                future_urls.append(executor.submit(fill_dataset, record, res, language_identification_model, counters, timeout, lang_hd, proxy, verbose))
                 batch_counter = batch_counter + 1
             counter = counter + 1
 #            print(f" size is {size} and counter is {counter}")
@@ -204,7 +206,7 @@ def save_cc(res, language_identification_model, seg_number='00000', perf=0 ,offs
     print(f"timeout_err_ct : {counters['timeout_err_ct']}, http_err_ct: {counters['http_err_ct']}, conn_err_ct: {counters['conn_err_ct']}")
 #TODO all of this part is hardcoded for now, in case we want to experiment with other language identfication models we need to refactor this for a smoother experience :D 
 
-def fill_dataset(record, content, language_identification_model, counters, timeout, lang_hd, verbose):
+def fill_dataset(record, content, language_identification_model, counters, timeout, lang_hd, proxy, verbose):
 ####### WARC PART
     # META LANGUAGE INFO  
     res = {'warc' : {}, 'curl': {}} 
@@ -234,7 +236,11 @@ def fill_dataset(record, content, language_identification_model, counters, timeo
     try: 
 #        headers = {"Accept-Language": "en-US, en; q=0.5"}
         headers = {"Accept-Language": lang_hd}
-        r = requests.get(res['warc']['uri'], headers=headers, timeout=timeout)
+        if(proxy is not None): 
+            proxies = {"http": proxy, "https": proxy}
+            r = requests.get(res['warc']['uri'], headers=headers, timeout=timeout, proxies=proxies)
+        else: 
+            r = requests.get(res['warc']['uri'], headers=headers, timeout=timeout)
     except requests.exceptions.ConnectTimeout as e: 
         counters['timeout_err_ct'] = counters['timeout_err_ct'] + 1
         return 1 
