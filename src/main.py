@@ -65,7 +65,6 @@ class CompareCommonCrawlToLocalCrawlPipeline:
 ## Second phase 
 # use the uri to strat the sub_pipe that traits the content and give the necessary stats.
         result = self._stats.handle(self.logs_from_content_pipe(result_first_phase));
-        print(f"result warc is {result}")
         #print(f"result local is {result_local}")
         response = {'stats' : {}}
         if type(result) is dict : 
