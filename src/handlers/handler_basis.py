@@ -35,6 +35,8 @@ class AbstractHandler(Handler):
         """The default behavior of handler after handling the request"""
         if self._next_handler: 
             return self._next_handler.handle(request)
+        else: 
+            return request
         return None
     def get_number_instances_traited(self): 
         """Get the number of traited instances with the current Handler"""

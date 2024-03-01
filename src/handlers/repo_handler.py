@@ -57,7 +57,7 @@ class RepoHandler(AbstractHandler):
         if(self.can_save()): 
             logging.info(f"inside the can save bloc with {self.get_number_instances_traited()}")
             # Should change the end=self._force_save if there are other things that might force the save.
-            self._repo.save(request['seg_number'], self._requests, self._stats, self._instances_counter , self._first_save, end=self._force_save)   
+            self._repo.save(request['seg_number'], self._requests, request['format'], self._stats, self._instances_counter , self._first_save, end=self._force_save)   
             if(self._first_save): 
                 self._first_save = False
             self._requests = [] 
@@ -70,6 +70,7 @@ class RepoHandler(AbstractHandler):
         self._requests.append(request) 
         self._stats = request['stats'] 
     def can_save(self): 
-        """ Check if the instance is in a state of saving the instance in the repo ressource."""
+        """ Check if the instance is in a state of saving the instance in the repo ressource.
+       """
         return self._force_save or ( self.n_req_trigger >= 0 ) and ( len(self._requests) == self.n_req_trigger )  
 

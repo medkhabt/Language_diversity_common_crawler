@@ -71,5 +71,5 @@ class WarcExtraction(Extraction) :
      	str | None 
 		the language meta data extracted from the content
         """
-        super().meta_extraction(content)
+        return super().meta_extraction(content)
 

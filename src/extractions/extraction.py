@@ -23,10 +23,12 @@ class Extraction :
             if meta_language is None: 
                 html_tag = soup.find('html')
                 if html_tag is not None: 	 
-                    meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else None 
+                    meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else '-' 
                 else : 
                     meta_language = '-'
-            return meta_language
+            if(meta_language is None) : 
+                meta_language = '-' 
+            return meta_language 
         except AssertionError as e: 
            print(e) 
-           return None
+           return '-' 
