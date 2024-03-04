@@ -3,16 +3,21 @@ from typing import Any, Optional
 import requests
 import logging
 class CurlHandler(AbstractHandler): 
+    def __init__(self, headers=None, proxies=None): 
+        self._headers = headers  
+        self._proxies = proxies
     def handle(self, request:Any) -> Optional[Any] : 
     ## check if there is any uri 
         if 'uri' in request: 
             try: 
                 if request['uri'] is None:
-                   logging.info("skipped")
+                   logging.warning("skipped")
                    return 1 
-                headers = request['headers'] if 'headers' in request else [] 
                 timeout = request['timeout'] if 'timeout' in request else 3
-                r = requests.get(request['uri'], headers=headers, timeout=timeout) 
+#185.199.229.156:7492:jtxlsruj:36hyaqrdp9jm , Spain (Madrid) 
+
+                proxies = {'https':"http://jtxlsruj:36hyaqrdp9jm@185.199.229.156:7492", 'http': "http://jtxlsruj:36hyaqrdp9jm@185.199.229.156:7492"} 
+                r = requests.get(request['uri'], headers=self._headers, proxies=self._proxies, timeout=timeout) 
                 request['content'] = r.text
                 request['record'] = r
                 request['type-content'] = 'local'

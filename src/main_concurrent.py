@@ -13,6 +13,10 @@ from handlers.stats_handler import StatsHandler
 from handlers.repo_handler import RepoHandler
 from handlers.curl_handler import CurlHandler
 
+
+import concurrent.futures 
+from concurrent.futures import as_completed, wait
+
 class CompareCommonCrawlToLocalCrawlPipeline:
     def __init__(self, stats, headers, proxies): 
         self._decoding = DecodingHandler()
@@ -45,6 +49,7 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         	"""
         # @TODO For performance tests, the language identifications are not dynamic. Change that
 #request['type-content'] = 'local'
+        print(" ^^^^^^^^^^^^^^starting the run of the pipeline")
 
         perf_dict = {'perf': perf, 'detect_fast': 0, 'langid': 0, 'cld2': 0}
         request = {'seg_number': seg_number, 'record': record, 'language_models': language_models, 'type-content' : 'warc', 'perf_dic': perf_dict, 'format' : []}
@@ -57,9 +62,14 @@ class CompareCommonCrawlToLocalCrawlPipeline:
 ## First phase
         self._decoding.set_next(self._extraction)
         if not self._clean:
+            print("--- we are cleaning")
             self._repo.clean(request['seg_number'])
             self._clean = True
+        print("------------- before starting the first phase")
         result_first_phase = self._decoding.handle(request)
+        #print(f"************** first phase result {result_first_phase}")
+        if(type(result_second_phase) == int):
+            return 1
         #print(f"response from first part is {result_first_phase}")
 # we get the uri
 ## Second phase 
@@ -99,10 +109,13 @@ class CompareCommonCrawlToLocalCrawlPipeline:
             response['curl'] = result_local
 # in case we have different int returns that are valid, we should probably look at this piece of code, it will def cause bugs. 
         if('curl' not in response and 'warc' not in response) : 
+            print("1") 
             self._repo.handle(response)
+        else : 
+            print("0")
         #print(f"response from cc part is {response}")
     def logs_from_content_pipe(self, request): 
-# boilerplate -> li -> stats : second pipe 
+# boilerplate -> li : second pipe 
         if (type(request) == int and request == 1): 
             return 1
         self._extraction.set_next(self._boilerplate).set_next(self._language_identification) 
@@ -225,12 +238,19 @@ if __name__ == "__main__":
         exit(1)
     if res.status_code == 200:
         print(f'Downloaded: {str(warc_url)}')
-        for record in ArchiveIterator(pre_traitement_seg_data(res)):
-            if size >= 0 and counter >= size:
-                break
-            compare_lang_pipe.run(configs["segment"], record, language_identification_models, perf_calc)
-            counter += 1
-        compare_lang_pipe.end(configs["segment"], language_identification_models)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=110) as executor: 
+            future_list = []
+            for record in ArchiveIterator(pre_traitement_seg_data(res)):
+                if size >= 0 and counter >= size:
+                    break
+                record.freeze()
+                future_list.append(executor.submit(compare_lang_pipe.run, configs["segment"], record, language_identification_models, perf_calc ))
+#                compare_lang_pipe.run(configs["segment"], record, language_identification_models, perf_calc)
+                counter += 1
+            done = wait(future_list)
+            print("reach the end of the pipeline")
+            compare_lang_pipe.end(configs["segment"], language_identification_models)
+            
 
     else:
         print("Failed")

@@ -43,7 +43,7 @@ class RepoHandler(AbstractHandler):
         self._repo.clean(seg_number) 
     def handle(self, request:Any) -> Optional[Any] :
         """ Handle the storage of the requests in the instance, saving the requests in the resource specified in the repo implementation and handle the end of a pipepline (no more records) """
-        logging.info("handling the repo phase")
+        logging.info(f"handling the repo phase with requests {self._requests} with size {len(self._requests)}")
         if('end' not in request or not request['end']): 
             self._force_save = False 
             self._instances_counter = self._instances_counter + 1
