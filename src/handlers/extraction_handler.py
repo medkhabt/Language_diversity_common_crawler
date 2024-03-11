@@ -25,7 +25,6 @@ class ExtractionHandler(AbstractHandler):
                 request['http_header'] = self._extraction['warc'].http_header_extraction(request['record'])
                 request['uri'] = self._extraction['warc'].uri_extraction(request['record'])
                 request['id'] = self._extraction['warc'].id_extraction(request['record'])
-                request['len'] = self._extraction['warc'].length_content_extraction(request['record'])
             elif (request['type-content'] == 'local'): 
                 request['meta'] = self._extraction['local'].meta_extraction(request['content'])
                 request['http_header'] = self._extraction['local'].http_header_extraction(request['record'])

@@ -1,10 +1,11 @@
 import os 
 import logging
+import gc
 class FileRepository: 
     def clean(self, seg_number:str): 
         """Clean the log file associated for the seg_number"""
         os.system(f'rm logs/{seg_number}.log 2>/dev/null');
-    def save(self, seg_number, requests, save_format, stats, size, first_save=False, end=False):
+    def save(self, seg_number, requests, save_format, stats, size, lock, first_save=False, end=False):
         """
 	Save the requests in the right format in the associated files.
 
@@ -23,18 +24,21 @@ class FileRepository:
 	end : bool 
 		Is it the last request to handle for the current pipeline.
         """
-        if(first_save): 
-            with open(f'logs/{seg_number}.log', 'w', encoding='utf-8') as f: 
-                f.write(f"{'|'.join(save_format)}\n")
-        with open(f'logs/{seg_number}.log', 'a', encoding='utf-8') as f: 
+        with lock: 
+            if(first_save): 
+                with open(f'logs/{seg_number}.log', 'w', encoding='utf-8') as f: 
+                    f.write(f"{'|'.join(save_format)}\n")
+            with open(f'logs/{seg_number}.log', 'a', encoding='utf-8') as f: 
 	# Found a problem with the max caraters allowed in a single line, the process get killed.
     #        json.dump(dataset, f, ensure_ascii = False, indent=2)
-            for dr in requests:
-                line_arr = []
-                for key in save_format: 
-                    line_arr.append(dr[key])
+                for dr in requests:
+                    line_arr = []
+                    if('meta_warc' not in dr): 
+                        print(f"gotcha {dr}")
+                    for key in save_format: 
+                        line_arr.append(dr[key])
                 #print(f"the line arr before joining is {line_arr} ")
-                f.write(f"{'|'.join(line_arr)}\n")
+                    f.write(f"{'|'.join(line_arr)}\n")
                 #print(f"the stats are {stats}")
 ## TODO fix the stats and uncomment the stats.
 #            if(end): 
@@ -47,3 +51,7 @@ class FileRepository:
 #        with open(f'../logs/test_refactor{seg_number}_performance', 'w', encoding='utf-8') as f: 
 #            f.write(f"{perf_dict['detect_fast']} {perf_dict['langid']} {perf_dict['cld2']}")
      
+            print(f"*****************REMOVING THE SAVED REQUESTS, current size is : {len(requests)}")
+            requests.clear()
+            print(f"*****************AFTER THE REMOVAL we have a size of  {len(requests)}")
+            #gc.collect()

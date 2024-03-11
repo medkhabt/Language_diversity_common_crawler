@@ -23,10 +23,8 @@ class DecodingHandler(AbstractHandler):
         if 'record' in request: 
             #request['content'] = self._decoder.decode(request['record'])
             content = self._decoder.decode(request['record'])
-            print("after decoding in the decoding handler")
             request['content'] = content
             if(request['content'] != 1):
-                #print(f"request after decoding is {request}")
                 return super().handle(request) 	
             logging.warning("Decoding Handler::handle >>> couldn't decode the content of the request.")
             self._err_counter = self._err_counter + 1

@@ -31,16 +31,11 @@ class Decoding:
         """
         default_encoding = 'iso-8859-1'
         try:
-            print(1)
             record_content = record.reader.read().decode(charset)
-            time.sleep(0.1) 
-            print(2)
             if record_content == None:
                 return 1
-            print(3)
             return record_content
         except UnicodeDecodeError:
-            print(4)
             if charset == default_encoding:
                 # we need to skip the URL
                 return 1
@@ -58,7 +53,6 @@ class Decoding:
             elif charset == 'windows-1251':
                 return self.decode_intern(record, 'utf-8')
             else:
-                print(5)
                 return 1
         except Exception as e: 
             print(f"general exception : {e}")

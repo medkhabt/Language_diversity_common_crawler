@@ -2,6 +2,7 @@ seg_name := $(shell grep "Segment" default.ini | cut -d '=' -f 2)
 dem_name := $(shell grep "Dem" default.ini | cut -d '=' -f 2)
 num_segs :=  $(shell grep "NumberOfSegs" default.ini | cut -d '=' -f 2)
 mode := $(shell grep "Mode" default.ini | cut -d '=' -f 2) 
+main_file := $(shell grep "Main" default.ini | cut -d '=' -f 2)
 count_bash_name := $$(grep ${mode} map_bash_count_to_pipeline.txt | awk -F ':' '{print $$2}' | tr -d ' ')
 all_dats_file_name := $(shell date +"all_%Y_%m_%d_%H_%m_%S")
 
@@ -27,7 +28,7 @@ graphs/dat/${seg_name}.dat: seg
 seg: logs/${seg_name}.log
 	mkdir graphs/dat graphs/images 2>/dev/null & bash commands/${count_bash_name}.sh logs/${seg_name}.log ${seg_name} 
 logs/${seg_name}.log: default.ini 
-	mkdir logs 2>/dev/null & python3 src/main_concurrent.py 
+	mkdir logs 2>/dev/null & python3 src/${main_file}.py 
 .PHONY: clean
 clean:     
 	rm logs/* 2>/dev/null

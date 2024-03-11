@@ -32,3 +32,5 @@ class Extraction :
         except AssertionError as e: 
            print(e) 
            return '-' 
+    def get_content_length(self, content):
+        return str(len(content))

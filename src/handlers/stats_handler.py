@@ -4,6 +4,7 @@ from handlers.handler_basis import AbstractHandler
 from stats.accuracy import Accuracy 
 from stats.unknown import Unknown 
 from stats.performance import Performance 
+from stats.redirect import Redirect 
 
 class StatsHandler(AbstractHandler): 
     """ 
@@ -21,7 +22,8 @@ class StatsHandler(AbstractHandler):
         self._provided_stats = {
 	    'accuracy' : {'counter' :  {'size':0, 'match':0} , 'instance' : Accuracy()},  
             'unknown' : {'counter' : {},  'instance' :  Unknown()} ,
-	    'performance' : {'counter' :{}, 'instance': Performance()}
+	    'performance' : {'counter' :{}, 'instance': Performance()},
+            'redirect' : {'counter' : {'base' :0}, 'instance': Redirect()} 
     } 
         self._stats = {}
         for stat in stats : 

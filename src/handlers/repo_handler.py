@@ -2,6 +2,8 @@ import logging
 from handlers.handler_basis import AbstractHandler
 from typing import Any, Optional
 from repos.file_repo import FileRepository
+import multiprocessing 
+import copy
 
 class RepoHandler(AbstractHandler): 
     """ 
@@ -38,6 +40,8 @@ class RepoHandler(AbstractHandler):
         self._first_save = True
         self.n_req_trigger = n  
         self._repo = FileRepository()
+        m = multiprocessing.Manager() 
+        self._lock = m.Lock()
     def clean(self, seg_number:str) : 
         """ Call the clean method from the repo implementation"""
         self._repo.clean(seg_number) 
@@ -51,16 +55,13 @@ class RepoHandler(AbstractHandler):
         else: 
             self._force_save = True
          
-# check the args
-# save the request in a data_strucute 
-# check if the we can save in repo or not ( is it part of the Repo handler responsibility ?  
         if(self.can_save()): 
             logging.info(f"inside the can save bloc with {self.get_number_instances_traited()}")
             # Should change the end=self._force_save if there are other things that might force the save.
-            self._repo.save(request['seg_number'], self._requests, request['format'], self._stats, self._instances_counter , self._first_save, end=self._force_save)   
+            self._repo.save(request['seg_number'], copy.deepcopy(self._requests), request['format'], self._stats, self._instances_counter, self._lock , self._first_save, end=self._force_save)   
             if(self._first_save): 
                 self._first_save = False
-            self._requests = [] 
+            self._requests.clear()
         return super().handle(request);
  #       else: 
             # TODO Refactor the handle of missing args for the handlers.

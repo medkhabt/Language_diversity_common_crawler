@@ -9,6 +9,7 @@ from handlers.decoding_handler import DecodingHandler
 from handlers.boiler_plate_handler import BoilerPlateHandler
 from handlers.extraction_handler import ExtractionHandler
 from handlers.language_identification_handler import LanguageIdentificationHandler
+from handlers.content_length_handler import ContentLengthHandler 
 from handlers.stats_handler import StatsHandler
 from handlers.repo_handler import RepoHandler
 from handlers.curl_handler import CurlHandler
@@ -17,18 +18,26 @@ from handlers.curl_handler import CurlHandler
 import concurrent.futures 
 from concurrent.futures import as_completed, wait
 
+
+#from memory_profiler import profile
+from guppy import hpy
+import gc
+#from pympler.tracker import SummaryTracker
+import tracemalloc
+
 class CompareCommonCrawlToLocalCrawlPipeline:
     def __init__(self, stats, headers, proxies): 
+
         self._decoding = DecodingHandler()
         self._boilerplate = BoilerPlateHandler()
         self._extraction = ExtractionHandler()
+        self._content_length = ContentLengthHandler()
         self._language_identification = LanguageIdentificationHandler()
         self._stats = StatsHandler(stats)
         self._repo = RepoHandler(100)
         self._local = CurlHandler(headers, proxies)
 
         self._clean = False
-        self._decoding
 # decoding -> extractions : first pipe. 
 ## after getting the uri. 
 # boilerplate -> li -> stats : second pipe 
@@ -49,29 +58,23 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         	"""
         # @TODO For performance tests, the language identifications are not dynamic. Change that
 #request['type-content'] = 'local'
-        print(" ^^^^^^^^^^^^^^starting the run of the pipeline")
 
         perf_dict = {'perf': perf, 'detect_fast': 0, 'langid': 0, 'cld2': 0}
         request = {'seg_number': seg_number, 'record': record, 'language_models': language_models, 'type-content' : 'warc', 'perf_dic': perf_dict, 'format' : []}
-        request['format'].extend(['meta_warc', 'http_header_warc'])
+        request['format'].extend(['meta_warc', 'http_header_warc', 'length_warc'])
         for lang in language_models:
             request['format'].append(lang + '_warc')
-        request['format'].extend(['meta_curl', 'http_header_curl'])
+        request['format'].extend(['meta_curl', 'http_header_curl', 'length_curl'])
         for lang in language_models:
             request['format'].append(lang + '_curl')
 ## First phase
         self._decoding.set_next(self._extraction)
         if not self._clean:
-            print("--- we are cleaning")
             self._repo.clean(request['seg_number'])
             self._clean = True
-        print("------------- before starting the first phase")
         result_first_phase = self._decoding.handle(request)
-        #print(f"************** first phase result {result_first_phase}")
-        if(type(result_second_phase) == int):
+        if(type(result_first_phase) == int):
             return 1
-        #print(f"response from first part is {result_first_phase}")
-# we get the uri
 ## Second phase 
 # use the uri to strat the sub_pipe that traits the content and give the necessary stats.
         result_second_phase = self.logs_from_content_pipe(result_first_phase)
@@ -109,17 +112,15 @@ class CompareCommonCrawlToLocalCrawlPipeline:
             response['curl'] = result_local
 # in case we have different int returns that are valid, we should probably look at this piece of code, it will def cause bugs. 
         if('curl' not in response and 'warc' not in response) : 
-            print("1") 
             self._repo.handle(response)
-        else : 
-            print("0")
-        #print(f"response from cc part is {response}")
+            #response.clear()
+            #del response['content_curl']
+            #del response['content_warc']
     def logs_from_content_pipe(self, request): 
-# boilerplate -> li : second pipe 
+# boilerplate -> content_length -> li : second pipe 
         if (type(request) == int and request == 1): 
             return 1
-        self._extraction.set_next(self._boilerplate).set_next(self._language_identification) 
-        #print(f"the request inside the content pipe is {request}")
+        self._extraction.set_next(self._boilerplate).set_next(self._content_length).set_next(self._language_identification) 
         return self._extraction.handle(request); 
     def get_content_locally_pipe(self, request): 
        return self.logs_from_content_pipe(self._local.handle(request))
@@ -130,10 +131,10 @@ class CompareCommonCrawlToLocalCrawlPipeline:
     def end(self, seg_number: str, language_models):
         """Set the end handler of the pipeline."""
         request = {'seg_number': seg_number, 'format' : [] , 'end': True}
-        request['format'].extend(['meta_warc', 'http_header_warc'])
+        request['format'].extend(['meta_warc', 'http_header_warc', 'length_warc'])
         for lang in language_models:
             request['format'].append(lang + '_warc')
-        request['format'].extend(['meta_curl', 'http_header_curl'])
+        request['format'].extend(['meta_curl', 'http_header_curl', 'length_curl'])
         for lang in language_models:
             request['format'].append(lang + '_curl')
 
@@ -153,7 +154,7 @@ class CompareLanguageIdentificationModelsPipeline:
         
         self.start(self._decoding)
         self._clean = False
-        self._decoding.set_next(self._extraction).set_next(self._boilerplate).set_next(self._language_identification).set_next(self._stats).set_next(self._repo)
+        self._decoding.set_next(self._extraction).set_next(self._boilerplate).set_next(self._language_identification).set_next(self._stats)
 
     def run(self, seg_number: str, record, language_models, perf=0):
         """
@@ -164,29 +165,32 @@ class CompareLanguageIdentificationModelsPipeline:
         - record : fastwarc.warc.WarcRecord
         	warc record
         - language_models: list
-        	language identification models to be used in the pipline
+        	language identification models to be used in the pipeline
         - perf : int 
         	0 : no perf stats ( and less executions ) 
         	1 : perf stats 
         	"""
         # @TODO For performance tests, the language identifications are not dynamic. Change that
         perf_dict = {'perf': perf, 'detect_fast': 0, 'langid': 0, 'cld2': 0}
-        request = {'seg_number': seg_number,'type-content' : 'warc', 'record': record, 'language_models': language_models, 'perf_dic': perf_dict, 'format' : ['meta_cc', 'http_header_cc', 'lang_cc', 'meta_curl', 'http_header_curl', 'lang_curl']}
-#f"|http_header_warc|lang_warc|meta_curl|http_header_curl|lang_curl|redirect|uri\n" 
-# {dr['meta']}|{dr['http_header']}|{dr['detect_fast']['lang']}|{dr['langid']['lang']}|{dr['cld2']['lang']}|{dr['detect_fast']['precision']}|{dr['langid']['precision']}|{dr['cld2']['precision']}\n
+        request = {'seg_number': seg_number,'type-content' : 'warc', 'record': record, 'language_models': language_models, 'perf_dic': perf_dict, 'format' : ['meta', 'http_header', 'detect_fast', 'langid', 'cld2']}
+
         if not self._clean:
             self._repo.clean(request['seg_number'])
             self._clean = True
-        self._start.handle(request)
-
+        response = self._start.handle(request)
+        # pre traitement of the pipeline result before saving it.
+        for lang in language_models: 
+           response[lang] = response[lang]['lang']
+        self._repo.handle(response)
+ 
     def start(self, start_handler):
         """Set the start handler of the pipeline."""
         self._start = start_handler
 
-    def end(self, seg_number: str):
+    def end(self, seg_number: str, language_models):
         """Set the end handler of the pipeline."""
         self._start = self._repo
-        request = {'seg_number': seg_number, 'end': True}
+        request = {'seg_number': seg_number, 'format' : ['meta', 'http_header', 'detect_fast', 'langid', 'cld2'] , 'end': True}
         self._start.handle(request)
 
 def pre_traitement_seg_data(res):
@@ -218,7 +222,7 @@ def config():
         logging.info(f"The configs are {configs}")
     return configs
 
-if __name__ == "__main__":
+def main(): 
     configs = config()
     perf_calc = int(configs['perf'])
     warc_url = f'https://data.commoncrawl.org/crawl-data/CC-MAIN-2023-40/segments/1695233505362.29/warc/CC-MAIN-20230921073711-20230921103711-{configs["segment"]}.warc.gz'
@@ -238,7 +242,7 @@ if __name__ == "__main__":
         exit(1)
     if res.status_code == 200:
         print(f'Downloaded: {str(warc_url)}')
-        with concurrent.futures.ThreadPoolExecutor(max_workers=110) as executor: 
+        with concurrent.futures.ThreadPoolExecutor(max_workers=170) as executor: 
             future_list = []
             for record in ArchiveIterator(pre_traitement_seg_data(res)):
                 if size >= 0 and counter >= size:
@@ -254,3 +258,37 @@ if __name__ == "__main__":
 
     else:
         print("Failed")
+if __name__ == "__main__":
+    hp = hpy()
+#    tracemalloc.start()
+    main()
+    h = hp.heap()
+#    snapshot = tracemalloc.take_snapshot()
+#    top_stats = snapshot.statistics('lineno')
+    #print("**** tracemalloc stats: ") 
+    #for stat in top_stats[:10]: 
+    #    print(stat)
+'''
+    print(f"^^^^^^^^^^^^^^^^^^^^^^^^^ h is {h}")
+    print(f"^^^^^^^^^^^^^^^^^^^^^^^^^ h by type {h.bytype}")
+    print(f"^^^^^^^^^^^^^^^^^^^^^^^^^ h by rcs {h.byrcs}")
+    byrcs = h.bytype
+
+
+    print(f"****** check the byrcs line that was chosen {byrcs[0]} ")
+    print(f"****** we are now bytes by rc {byrcs[0].byrcs} ")
+    print(f"****** the str size  {byrcs[0].byrcs[0].bysize} ")
+
+    print(f"******  we are in the byrc by id {byrcs[0].byid} ")
+ 
+    print(f"******  the rcs 1 -> byvia {byrcs[0].byvia} ")
+    cleaning_part = byrcs[0].byvia[0].referrers
+  
+    print(f"******  cleaning part : {cleaning_part} ")
+    print(f"******  cleaning part by rcs {cleaning_part.byrcs}")
+
+    t = byrcs[1].referrers.byrcs 
+    print(f"****** referres : {t} ")
+    print(f"****** domisize : {t.domisize} ")
+    print(f"****** domisize of the cleaning part : {cleaning_part.byrcs.domisize} ")
+'''
