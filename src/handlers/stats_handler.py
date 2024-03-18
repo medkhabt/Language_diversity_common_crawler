@@ -15,10 +15,9 @@ class StatsHandler(AbstractHandler):
      _stats: dict 
 	contains all the stats that we are including in the pipeline and wit their implementations.
     """ 
-    _stat_init: bool = True ;   
-    _stats: dict
     def __init__(self, stats): 
         """ Initiate the _stats with the implementations"""
+        self._stat_init = True
         self._provided_stats = {
 	    'accuracy' : {'counter' :  {'size':0, 'match':0} , 'instance' : Accuracy()},  
             'unknown' : {'counter' : {},  'instance' :  Unknown()} ,

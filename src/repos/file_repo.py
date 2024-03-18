@@ -33,8 +33,6 @@ class FileRepository:
     #        json.dump(dataset, f, ensure_ascii = False, indent=2)
                 for dr in requests:
                     line_arr = []
-                    if('meta_warc' not in dr): 
-                        print(f"gotcha {dr}")
                     for key in save_format: 
                         line_arr.append(dr[key])
                 #print(f"the line arr before joining is {line_arr} ")

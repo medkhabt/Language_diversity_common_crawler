@@ -14,6 +14,7 @@ class WarcExtraction(Extraction) :
         ------
         str|None 
         """
+        # Mem problem here.
         return record.headers.get('WARC-Target-URI')
     def id_extraction(self, record): 
         """
@@ -54,6 +55,8 @@ class WarcExtraction(Extraction) :
         ------
         str
         """
+        # mem problem here.
+        #http_language_header = copy.copy(record.http_headers.get('Accept-Language')) if record.http_headers is not None else None
         http_language_header = record.http_headers.get('Accept-Language') if record.http_headers is not None else None
         http_language_header =  http_language_header.split(",")[0] if http_language_header is not None else '-';  
         return http_language_header if http_language_header is not None else '-'; 

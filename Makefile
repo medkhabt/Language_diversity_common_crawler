@@ -29,8 +29,11 @@ seg: logs/${seg_name}.log
 	mkdir graphs/dat graphs/images 2>/dev/null & bash commands/${count_bash_name}.sh logs/${seg_name}.log ${seg_name} 
 logs/${seg_name}.log: default.ini 
 	mkdir logs 2>/dev/null & python3 src/${main_file}.py 
+
+        
 .PHONY: clean
 clean:     
 	rm logs/* 2>/dev/null
 	rm -r graphs/images/* 2>/dev/null
 	rm graphs/dat/* 2>/dev/null
+

@@ -17,13 +17,16 @@ from handlers.curl_handler import CurlHandler
 
 import concurrent.futures 
 from concurrent.futures import as_completed, wait
-
+import multiprocessing
+import pebble
 
 #from memory_profiler import profile
-from guppy import hpy
+#from guppy import hpy
 import gc
 #from pympler.tracker import SummaryTracker
 import tracemalloc
+
+import mem_profiling
 
 class CompareCommonCrawlToLocalCrawlPipeline:
     def __init__(self, stats, headers, proxies): 
@@ -67,6 +70,7 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         request['format'].extend(['meta_curl', 'http_header_curl', 'length_curl'])
         for lang in language_models:
             request['format'].append(lang + '_curl')
+        request['format'].append('redirect')
 ## First phase
         self._decoding.set_next(self._extraction)
         if not self._clean:
@@ -85,7 +89,7 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         response = {'stats' : {}}
         if type(result) is dict : 
             for key, value in result.items(): 
-                if key == 'seg_number' or key == 'format':
+                if key == 'seg_number' or key == 'format' or key == 'redirect':
                     response[key] = value; 
                 elif key == 'stats': 
                     response['stats']['warc'] = value
@@ -99,7 +103,7 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         result_local = self.get_content_locally_pipe(result_first_phase)
         if type(result_local) is dict : 
             for key, value in result_local.items(): 
-                if key == 'seg_number' or key == 'format':
+                if key == 'seg_number' or key == 'format' or key == 'redirect':
                     response[key] = value; 
                 elif key in language_models:
                     response[key + '_curl'] = value['lang'] 
@@ -138,6 +142,7 @@ class CompareCommonCrawlToLocalCrawlPipeline:
         for lang in language_models:
             request['format'].append(lang + '_curl')
 
+        request['format'].append('redirect')
         self._repo.handle(request)
 
 class CompareLanguageIdentificationModelsPipeline:
@@ -242,7 +247,8 @@ def main():
         exit(1)
     if res.status_code == 200:
         print(f'Downloaded: {str(warc_url)}')
-        with concurrent.futures.ThreadPoolExecutor(max_workers=170) as executor: 
+        #with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor: 
+        with pebble.ThreadPool(max_workers=200, max_tasks=21) as executor: 
             future_list = []
             for record in ArchiveIterator(pre_traitement_seg_data(res)):
                 if size >= 0 and counter >= size:
@@ -259,12 +265,13 @@ def main():
     else:
         print("Failed")
 if __name__ == "__main__":
-    hp = hpy()
-#    tracemalloc.start()
+    #hp = hpy()
+    #tracemalloc.start(10)
     main()
-    h = hp.heap()
-#    snapshot = tracemalloc.take_snapshot()
-#    top_stats = snapshot.statistics('lineno')
+    #h = hp.heap()
+    #snapshot = tracemalloc.take_snapshot()
+    #mem_profiling.top_n(25, snapshot, 'test')
+    #top_stats = snapshot.statistics('lineno')
     #print("**** tracemalloc stats: ") 
     #for stat in top_stats[:10]: 
     #    print(stat)

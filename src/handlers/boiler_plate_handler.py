@@ -11,7 +11,6 @@ class BoilerPlateHandler(AbstractHandler):
     _impl: strategies.boilerplate_removal.boilerplate_removal.BoilerPlateRemoval 
     		The implementation of the BoilerplateRemoval technique.	
     """ 
-    _impl:BoilerPlateRemoval
     def __init__(self):
        """ Construct the BoilerPlateHandler by setting up the boilerplate removal implementation"""
        self._impl = ResiliParseHtml2Text()

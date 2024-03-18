@@ -23,9 +23,9 @@ class CurlHandler(AbstractHandler):
                 request['record'] = r
                 request['type-content'] = 'local'
                 if r.history: 
-                    request['redirect'] = True 
+                    request['redirect'] = 'yes' 
                 else :
-                    request['redirect'] = False
+                    request['redirect'] = 'no' 
                 return super().handle(request);
             except requests.exceptions.ConnectTimeout as e: 
                 self._error_counter['timeout'] = self._error_counter['timeout'] + 1

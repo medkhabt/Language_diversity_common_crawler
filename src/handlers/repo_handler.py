@@ -23,12 +23,6 @@ class RepoHandler(AbstractHandler):
 	Contains the stats that we're generated If there was a StatsHandler in the pipleline.	
     """ 
 # TODO fix the case where we don't specify the umber of req trigger
-    _requests : list = [] ;
-    _n_req_trigger: int = -1 ;  
-    _first_save: bool
-    _repo = None; 
-    _force_save = False;
-    _stats: dict = {}
     def __init__(self, n = -1): 
         """
 	Initialize the Attributes.
@@ -37,6 +31,8 @@ class RepoHandler(AbstractHandler):
       	n : int 
 	    Minimum number of requests before saving them in the proper resource. 
         """ 
+        self._requests = [] ;
+        self._force_save = False;
         self._first_save = True
         self.n_req_trigger = n  
         self._repo = FileRepository()

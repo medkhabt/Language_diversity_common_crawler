@@ -10,7 +10,6 @@ class ContentLengthHandler(AbstractHandler):
     _extraction: extractions.extraction.Extraction 
 		The extraction impl used to get the the content.
     """ 
-    _extraction:Extraction      
     def __init__(self ):
         """ Construct the ExtractionHandler by setting up the Extraction implementation"""
         self._extraction = Extraction() 
