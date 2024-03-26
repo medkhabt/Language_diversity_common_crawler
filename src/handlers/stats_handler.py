@@ -4,6 +4,7 @@ from handlers.handler_basis import AbstractHandler
 from stats.accuracy import Accuracy 
 from stats.unknown import Unknown 
 from stats.performance import Performance 
+from stats.redirect import Redirect 
 
 class StatsHandler(AbstractHandler): 
     """ 
@@ -14,15 +15,19 @@ class StatsHandler(AbstractHandler):
      _stats: dict 
 	contains all the stats that we are including in the pipeline and wit their implementations.
     """ 
-    _stat_init: bool = True ;   
-    _stats: dict
-    def __init__(self): 
+    def __init__(self, stats): 
         """ Initiate the _stats with the implementations"""
-        self._stats = {
+        self._stat_init = True
+        self._provided_stats = {
 	    'accuracy' : {'counter' :  {'size':0, 'match':0} , 'instance' : Accuracy()},  
             'unknown' : {'counter' : {},  'instance' :  Unknown()} ,
-	    'performance' : {'counter' :{}, 'instance': Performance()}
+	    'performance' : {'counter' :{}, 'instance': Performance()},
+            'redirect' : {'counter' : {'base' :0}, 'instance': Redirect()} 
     } 
+        self._stats = {}
+        for stat in stats : 
+            if ( stat in self._provided_stats ):   
+                self_stats[stat] = self._provided_stats[stat]
     def handle(self, request:Any) -> Optional[Any] :
         """Handle the stats"""
         logging.info("handling the stats phase")

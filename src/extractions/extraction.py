@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+import gc
 class Extraction : 
     def meta_extraction(self, content):
         """
@@ -19,14 +20,23 @@ class Extraction :
             meta_language = None
             for meta in soup.find_all('meta') : 
                 if meta.get('name') == 'language': 
-                    meta_language = meta.get('content')
+                    meta_language = str(meta.get('content'))
             if meta_language is None: 
                 html_tag = soup.find('html')
                 if html_tag is not None: 	 
-                    meta_language = html_tag.get('lang') if html_tag.get('lang') is not None else None 
+                    meta_language = str(html_tag.get('lang')) if html_tag.get('lang') is not None else '-' 
                 else : 
                     meta_language = '-'
-            return meta_language
+            if(meta_language is None) : 
+                meta_language = '-' 
+            return meta_language 
         except AssertionError as e: 
            print(e) 
-           return None
+           return '-' 
+        finally : 
+            if (soup is not None): 
+                soup.decompose() 
+            del soup
+            gc.collect()
+    def get_content_length(self, content):
+        return str(len(content))

@@ -1,3 +1,4 @@
+import time 
 class Decoding:
     """Class for decoding HTTP records with various character encodings."""
 
@@ -53,3 +54,5 @@ class Decoding:
                 return self.decode_intern(record, 'utf-8')
             else:
                 return 1
+        except Exception as e: 
+            print(f"general exception : {e}")

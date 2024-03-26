@@ -3,6 +3,7 @@ from stats.base import Base
 class Accuracy(Base):
     """Class for calculating accuracy metrics."""
 
+## TODO this stat is heavily dependent on a fixed set of language identification models. We need to make it extendable and flexible. 
     def generate(self, input_dict: dict, output_dict: dict) -> None:
         """
         Generate accuracy metrics based on input and output dictionaries.

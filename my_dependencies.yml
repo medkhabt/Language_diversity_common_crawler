@@ -13,3 +13,6 @@ dependencies:
         - pycld2==0.41
         - regex
         - beautifulsoup4==4.10
+        #- memory_profiler
+        - guppy3
+        - pebble # concurrency model
